@@ -1,5 +1,5 @@
 // ⚠️ Dùng CHUNG 1 URL Apps Script cho cả form feedback và admin panel
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzlcWb7LonMbd0hjqVVNZKbdXgKrMUBQczFeDexZQDjPWDCBrkDYA7JhhbM7xjlyf5EIA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwC2pfzd112NVPlbjWoNB19riVKXA3ccWr774NSpsehKnXuJFHCRB81MvDaC-GlxBIESA/exec";
 
 document.addEventListener('DOMContentLoaded', () => {
     const feedbackView = document.getElementById('feedback-view');
