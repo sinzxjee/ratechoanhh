@@ -3,56 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meow Feedback - Dịch vụ từ tâm</title>
+    <title>ratechotui 🐾</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- PWA: cài được như app thật, dùng offline -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff9f43">
+    <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="icons/favicon-64.png" sizes="64x64" type="image/png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ratechotui">
 </head>
 <body>
     <!-- Hiệu ứng mèo theo chuột -->
     <div id="cursor-follower">🐱</div>
 
-    <div class="container">
-        <header>
-            <div class="mascot-box">
-                <img src="https://cataas.com/cat/cute" alt="Mascot" id="cat-mascot">
-                <div class="bubble" id="chat-bubble">Chào em! Dịch vụ hôm nay có làm em vui không z?</div>
-            </div>
-            <h1>Phản Hồi Của YNhi</h1>
-        </header>
-
-        <main class="form-container">
-            <div class="input-field">
-                <label>📍 Tên dịch vụ:</label>
-                <input type="text" id="service" placeholder="VD: Đưa đi làm, ... (Sẽ cập nhật thêmm)">
-            </div>
-
-            <div class="star-rating">
-                <div class="stars" id="stars">
-                    <span data-v="5">★</span><span data-v="4">★</span><span data-v="3">★</span><span data-v="2">★</span><span data-v="1">★</span>
+    <!-- ============ VIEW 1: FORM FEEDBACK (mặc định) ============ -->
+    <div id="feedback-view">
+        <div class="container">
+            <header>
+                <div class="mascot-box">
+                    <img src="https://cataas.com/cat/cute" alt="Mascot" id="cat-mascot">
+                    <div class="bubble" id="chat-bubble">Chào em! Dịch vụ hôm nay có làm em vui không z?</div>
                 </div>
-                <p id="star-desc">Đánh giá cho anh nhé</p>
+                <h1>Phản Hồi Của YNhi</h1>
+            </header>
+
+            <!-- 🏅 Gamification: huy hiệu, streak, lịch sử -->
+            <div class="game-panel" id="game-panel">
+                <div class="badge-box">
+                    <span id="badge-emoji">🐣</span>
+                    <div class="badge-text">
+                        <p class="badge-title" id="badge-title">Tân binh</p>
+                        <p class="badge-sub" id="badge-sub">0/5 lần đánh giá</p>
+                    </div>
+                    <span class="streak-chip" id="streak-chip"></span>
+                </div>
+                <div class="progress-bar-wrap">
+                    <div class="progress-bar-fill" id="progress-fill"></div>
+                </div>
+                <button type="button" id="toggle-history-btn" class="link-btn">Xem lịch sử đánh giá ▾</button>
+                <div id="history-list" class="history-list hidden"></div>
             </div>
 
-            <div class="input-field">
-                <label>💬 Nhận xét của ynhi:</label>
-                <textarea id="comment" placeholder="Hãy viết gì đó thật tâm nhé..."></textarea>
-            </div>
+            <main class="form-container">
+                <div class="input-field">
+                    <label>📧 Email của em:</label>
+                    <input type="email" id="user-email" placeholder="example@gmail.com" required>
+                    <p class="field-error-msg" id="email-error">Email không hợp lệ hoặc bị bỏ trống nha!</p>
+                </div>
 
-            <button id="send-btn">Ấn vào đây nữa là xong nè 🐾</button>
+                <div class="input-field">
+                    <label>📍 Tên dịch vụ:</label>
+                    <input type="text" id="service" placeholder="VD: Đưa đi làm, ... (Sẽ cập nhật thêmm)">
+                </div>
 
-            <!-- Pop-up Cảm Ơn -->
-<div id="thanks-popup" class="popup-overlay">
-    <div class="popup-content">
-        <div class="popup-mascot">
-            <img src="http://bestanimations.com/Animals/Mammals/Cats/cats/cute-kitty-animated-gif-12.gif" alt="Mèo cảm ơn">
+                <div class="star-rating">
+                    <div class="stars" id="stars">
+                        <span data-v="5">★</span><span data-v="4">★</span><span data-v="3">★</span><span data-v="2">★</span><span data-v="1">★</span>
+                    </div>
+                    <p id="star-desc">Đánh giá cho anh nhé</p>
+                </div>
+
+                <div class="input-field">
+                    <label>💬 Nhận xét của ynhi:</label>
+                    <textarea id="comment" placeholder="Hãy viết gì đó thật tâm nhé..."></textarea>
+                </div>
+
+                <div class="input-field">
+                    <label>📷 Ảnh khoảnh khắc (không bắt buộc):</label>
+                    <label class="photo-upload-box" for="photo-input">
+                        <p class="photo-upload-label">Chạm để chọn ảnh 🐾</p>
+                        <input type="file" id="photo-input" accept="image/*">
+                    </label>
+                    <div id="photo-preview-wrap">
+                        <img id="photo-preview" src="" alt="Ảnh đính kèm">
+                        <button type="button" id="remove-photo">✕</button>
+                    </div>
+                </div>
+
+                <button id="send-btn">Ấn vào đây nữa là xong nè 🐾</button>
+
+                <!-- Pop-up Cảm Ơn -->
+                <div id="thanks-popup" class="popup-overlay">
+                    <div class="popup-content">
+                        <div class="popup-mascot">
+                            <img src="http://bestanimations.com/Animals/Mammals/Cats/cats/cute-kitty-animated-gif-12.gif" alt="Mèo cảm ơn">
+                        </div>
+                        <p>Anh xin tiếp thu và sẽ phục vụ tốt hơn nhé!</p>
+                        <div>
+                            <button id="download-card-btn">💌 Tải thiệp cảm ơn</button>
+                            <button id="close-popup">Đóng lại 🐾</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Khu vực render thiệp cảm ơn (ẩn, chỉ để html2canvas chụp) -->
+                <div id="card-render-area">
+                    <div id="thank-you-card">
+                        <img id="card-mascot-img" src="https://cataas.com/cat/says/Thank%20You" alt="Mèo cảm ơn">
+                        <div class="card-stars" id="card-stars"></div>
+                        <p class="card-msg" id="card-msg"></p>
+                        <p class="card-footer">Meow Feedback 🐾</p>
+                    </div>
+                </div>
+            </main>
         </div>
-        <p>Anh xin tiếp thu và sẽ phục vụ tốt hơn nhé!</p>
-        <button id="close-popup">Đóng lại 🐾</button>
     </div>
-</div>
 
-        </main>
+    <!-- ============ VIEW 2: ADMIN (ẩn mặc định) ============ -->
+    <div id="admin-view" class="hidden">
 
+        <!-- Màn hình đăng nhập -->
+        <div id="login-screen" class="login-screen">
+            <div class="login-box">
+                <div class="login-emoji">🐾</div>
+                <h1>Admin Meow Feedback</h1>
+                <p>Nhập mật khẩu admin để xem feedback nhé</p>
+                <input type="password" id="admin-key-input" placeholder="Mật khẩu admin">
+                <button id="login-btn">Vào xem 🐱</button>
+                <p class="login-error" id="login-error">Sai mật khẩu rồi, thử lại nha!</p>
+                <button id="back-to-form-btn" class="link-btn">← Quay lại form feedback</button>
+            </div>
+        </div>
+
+        <!-- Màn hình chính -->
+        <div id="dashboard" class="dashboard hidden">
+            <header class="dash-header">
+                <h1>🐾 Admin - Phản Hồi Của YNhi</h1>
+                <div class="dash-actions">
+                    <span id="feedback-count"></span>
+                    <button id="refresh-btn">🔄 Làm mới</button>
+                    <button id="logout-btn">Đăng xuất</button>
+                </div>
+            </header>
+
+            <div id="loading" class="loading hidden">Đang tải feedback... 🐾</div>
+            <div id="empty-state" class="empty-state hidden">Chưa có feedback nào cả 🐱</div>
+
+            <div id="feedback-list" class="feedback-list"></div>
+        </div>
+
+        <!-- Template 1 card feedback -->
+        <template id="feedback-card-template">
+            <div class="feedback-card">
+                <div class="card-top">
+                    <div class="card-info">
+                        <p class="card-email"></p>
+                        <p class="card-service"></p>
+                        <p class="card-time"></p>
+                    </div>
+                    <div class="card-stars"></div>
+                </div>
+
+                <p class="card-comment"></p>
+
+                <div class="card-photo-wrap"></div>
+
+                <div class="reply-status"></div>
+
+                <div class="reply-box">
+                    <input type="text" class="reply-subject" placeholder="Tiêu đề email (VD: Cảm ơn em vì feedback ❤️)">
+                    <textarea class="reply-message" placeholder="Viết lời nhắn gửi cho người dùng..."></textarea>
+                    <button class="send-reply-btn">📧 Gửi email trả lời</button>
+                </div>
+            </div>
+        </template>
     </div>
 
     <script src="script.js"></script>
