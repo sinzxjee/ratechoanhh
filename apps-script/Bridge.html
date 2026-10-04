@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head><body>
+<script>
+    const config = <?!= config ?>;
+    function send(id, result) {
+        window.top.postMessage({ type: 'meow-backend', channel: config.channel, id, result }, config.origin);
+    }
+    window.addEventListener('message', function(event) {
+        const msg = event.data;
+        if (event.source !== window.top || event.origin !== config.origin
+            || !msg || msg.type !== 'meow-request' || msg.channel !== config.channel
+            || typeof msg.id !== 'string' || !msg.payload) return;
+        google.script.run
+            .withSuccessHandler(function(result) { send(msg.id, result); })
+            .withFailureHandler(function(error) { send(msg.id, { success: false, error: error.message || 'Không xử lý được yêu cầu.' }); })
+            .handleClientRequest(msg.payload);
+    });
+    window.top.postMessage({ type: 'meow-backend', channel: config.channel, ready: true }, config.origin);
+</script>
+</body></html>

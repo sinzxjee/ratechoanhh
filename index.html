@@ -6,14 +6,13 @@
     <title>ratechotui 🐾</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <!-- PWA: cài được như app thật, dùng offline -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ff9f43">
-    <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
-    <link rel="icon" href="icons/favicon-64.png" sizes="64x64" type="image/png">
-    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="favicon-64.png" sizes="64x64" type="image/png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ratechotui">
@@ -31,6 +30,16 @@
                     <div class="bubble" id="chat-bubble">Chào em! Dịch vụ hôm nay có làm em vui không z?</div>
                 </div>
                 <h1>Phản Hồi Của YNhi</h1>
+                <div class="app-actions">
+                    <button type="button" id="install-app-btn">📲 Cài app</button>
+                    <button type="button" id="open-admin-btn" class="link-btn">Quản lý phản hồi</button>
+                </div>
+                <div id="install-help" class="install-help" hidden>
+                    <p><strong>iPhone/iPad:</strong> mở bằng Safari → Chia sẻ → Thêm vào Màn hình chính.</p>
+                    <p><strong>Android:</strong> mở bằng Chrome → menu ⋮ → Cài ứng dụng hoặc Thêm vào màn hình chính.</p>
+                    <p><strong>Máy tính:</strong> mở bằng Chrome/Edge → biểu tượng cài ứng dụng trên thanh địa chỉ. Nếu chưa thấy, tải lại trang khi có mạng.</p>
+                    <button type="button" id="close-install-help" class="link-btn">Đóng hướng dẫn</button>
+                </div>
             </header>
 
             <!-- 🏅 Gamification: huy hiệu, streak, lịch sử -->
@@ -52,14 +61,14 @@
 
             <main class="form-container">
                 <div class="input-field">
-                    <label>📧 Email của em:</label>
-                    <input type="email" id="user-email" placeholder="example@gmail.com" required>
+                    <label for="user-email">📧 Email của em:</label>
+                    <input type="email" id="user-email" placeholder="example@gmail.com" maxlength="254" required>
                     <p class="field-error-msg" id="email-error">Email không hợp lệ hoặc bị bỏ trống nha!</p>
                 </div>
 
                 <div class="input-field">
-                    <label>📍 Tên dịch vụ:</label>
-                    <input type="text" id="service" placeholder="VD: Đưa đi làm, ... (Sẽ cập nhật thêmm)">
+                    <label for="service">📍 Tên dịch vụ:</label>
+                    <input type="text" id="service" maxlength="200" required placeholder="VD: Đưa đi làm, ... (Sẽ cập nhật thêmm)">
                 </div>
 
                 <div class="star-rating">
@@ -70,8 +79,8 @@
                 </div>
 
                 <div class="input-field">
-                    <label>💬 Nhận xét của ynhi:</label>
-                    <textarea id="comment" placeholder="Hãy viết gì đó thật tâm nhé..."></textarea>
+                    <label for="comment">💬 Nhận xét của ynhi:</label>
+                    <textarea id="comment" maxlength="5000" required placeholder="Hãy viết gì đó thật tâm nhé..."></textarea>
                 </div>
 
                 <div class="input-field">
@@ -87,12 +96,13 @@
                 </div>
 
                 <button id="send-btn">Ấn vào đây nữa là xong nè 🐾</button>
+                <p id="form-status" class="request-status" role="status" aria-live="polite"></p>
 
                 <!-- Pop-up Cảm Ơn -->
                 <div id="thanks-popup" class="popup-overlay">
                     <div class="popup-content">
                         <div class="popup-mascot">
-                            <img src="http://bestanimations.com/Animals/Mammals/Cats/cats/cute-kitty-animated-gif-12.gif" alt="Mèo cảm ơn">
+                            <img src="icon-192.png" alt="Mèo cảm ơn">
                         </div>
                         <p>Anh xin tiếp thu và sẽ phục vụ tốt hơn nhé!</p>
                         <div>
@@ -105,7 +115,7 @@
                 <!-- Khu vực render thiệp cảm ơn (ẩn, chỉ để html2canvas chụp) -->
                 <div id="card-render-area">
                     <div id="thank-you-card">
-                        <img id="card-mascot-img" src="https://cataas.com/cat/says/Thank%20You" alt="Mèo cảm ơn">
+                        <img id="card-mascot-img" src="icon-192.png" alt="Mèo cảm ơn">
                         <div class="card-stars" id="card-stars"></div>
                         <p class="card-msg" id="card-msg"></p>
                         <p class="card-footer">Meow Feedback 🐾</p>
@@ -124,9 +134,9 @@
                 <div class="login-emoji">🐾</div>
                 <h1>Admin Meow Feedback</h1>
                 <p>Nhập mật khẩu admin để xem feedback nhé</p>
-                <input type="password" id="admin-key-input" placeholder="Mật khẩu admin">
+                <input type="password" id="admin-key-input" aria-label="Mật khẩu admin" autocomplete="current-password" placeholder="Mật khẩu admin">
                 <button id="login-btn">Vào xem 🐱</button>
-                <p class="login-error" id="login-error">Sai mật khẩu rồi, thử lại nha!</p>
+                <p class="login-error" id="login-error" role="alert">Sai mật khẩu rồi, thử lại nha!</p>
                 <button id="back-to-form-btn" class="link-btn">← Quay lại form feedback</button>
             </div>
         </div>
@@ -144,6 +154,7 @@
 
             <div id="loading" class="loading hidden">Đang tải feedback... 🐾</div>
             <div id="empty-state" class="empty-state hidden">Chưa có feedback nào cả 🐱</div>
+            <p id="admin-status" class="request-status" role="status" aria-live="polite"></p>
 
             <div id="feedback-list" class="feedback-list"></div>
         </div>
@@ -167,14 +178,16 @@
                 <div class="reply-status"></div>
 
                 <div class="reply-box">
-                    <input type="text" class="reply-subject" placeholder="Tiêu đề email (VD: Cảm ơn em vì feedback ❤️)">
-                    <textarea class="reply-message" placeholder="Viết lời nhắn gửi cho người dùng..."></textarea>
+                    <input type="text" class="reply-subject" maxlength="200" aria-label="Tiêu đề email" placeholder="Tiêu đề email (VD: Cảm ơn em vì feedback ❤️)">
+                    <textarea class="reply-message" maxlength="10000" aria-label="Nội dung trả lời" placeholder="Viết lời nhắn gửi cho người dùng..."></textarea>
                     <button class="send-reply-btn">📧 Gửi email trả lời</button>
+                    <p class="reply-result request-status" role="status" aria-live="polite"></p>
                 </div>
             </div>
         </template>
     </div>
 
+    <script src="backend-client.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

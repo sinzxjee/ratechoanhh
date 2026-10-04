@@ -1,5 +1,4 @@
-// ⚠️ Dùng CHUNG 1 URL Apps Script cho cả form feedback và admin panel
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwC2pfzd112NVPlbjWoNB19riVKXA3ccWr774NSpsehKnXuJFHCRB81MvDaC-GlxBIESA/exec";
+// Backend endpoint and confirmed request transport are in backend-client.js.
 
 document.addEventListener('DOMContentLoaded', () => {
     const feedbackView = document.getElementById('feedback-view');
@@ -8,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCursorFollower();
     initPawPrints();
     initServiceWorker();
+    initInstallApp();
     const gamification = initGamification();
     initFeedbackForm(gamification);
     initAdminPanel();
@@ -18,12 +18,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===================================================================
     function initServiceWorker() {
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
+            const register = () => {
                 navigator.serviceWorker.register('sw.js').catch((err) => {
                     console.warn('Không đăng ký được service worker:', err);
                 });
-            });
+            };
+            if (document.readyState === 'complete') register();
+            else window.addEventListener('load', register, { once: true });
         }
+    }
+
+    function initInstallApp() {
+        const button = document.getElementById('install-app-btn');
+        const help = document.getElementById('install-help');
+        const close = document.getElementById('close-install-help');
+        let deferred = null;
+        const standalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+        const update = () => { button.hidden = standalone(); };
+        update();
+        window.addEventListener('beforeinstallprompt', event => {
+            event.preventDefault();
+            deferred = event;
+            update();
+        });
+        window.addEventListener('appinstalled', () => { deferred = null; button.hidden = true; help.hidden = true; });
+        window.matchMedia('(display-mode: standalone)').addEventListener('change', update);
+        button.addEventListener('click', async () => {
+            if (!deferred) { help.hidden = !help.hidden; return; }
+            const prompt = deferred;
+            deferred = null;
+            button.disabled = true;
+            try { await prompt.prompt(); await prompt.userChoice; }
+            catch (err) { help.hidden = false; }
+            finally { button.disabled = false; }
+        });
+        close.addEventListener('click', () => { help.hidden = true; });
     }
 
     // ===================================================================
@@ -53,14 +82,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function loadHistory() {
             try {
-                return JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+                const history = JSON.parse(localStorage.getItem(HISTORY_KEY));
+                if (!Array.isArray(history)) return [];
+                return history.filter(h => h && Number.isInteger(h.stars) && h.stars >= 1 && h.stars <= 5
+                    && Number.isFinite(h.ts) && !isNaN(new Date(h.ts).getTime()))
+                    .map(h => ({ ...h, service: String(h.service || ''), comment: String(h.comment || '') }))
+                    .slice(0, MAX_HISTORY);
             } catch (e) {
                 return [];
             }
         }
 
         function saveHistory(history) {
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY)));
+            try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY))); }
+            catch (err) { console.warn('Không lưu được lịch sử trên thiết bị:', err); }
         }
 
         function getTierIndex(count) {
@@ -169,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const before = loadHistory();
             const tierBefore = getTierIndex(before.length);
 
-            const updated = [{ ts: Date.now(), ...entry }, ...before];
+            const updated = [{ ts: Date.now(), ...entry }, ...before].slice(0, MAX_HISTORY);
             saveHistory(updated);
 
             const tierIdx = renderBadge(updated);
@@ -189,6 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function initViewSwitcher() {
         const mascot = document.getElementById('cat-mascot');
         const backToFormBtn = document.getElementById('back-to-form-btn');
+        document.getElementById('open-admin-btn').addEventListener('click', showAdmin);
 
         function showAdmin() {
             feedbackView.classList.add('hidden');
@@ -275,6 +311,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let rating = 0;
         let photoBase64 = "";
         let photoMime = "";
+        let photoBusy = false;
+        let photoVersion = 0;
+        let submission = null;
 
         const mascot = document.getElementById('cat-mascot');
         const bubble = document.getElementById('chat-bubble');
@@ -289,6 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const downloadCardBtn = document.getElementById('download-card-btn');
         const sendBtn = document.getElementById('send-btn');
         const stars = document.querySelectorAll('#stars span');
+        const formStatus = document.getElementById('form-status');
 
         const catEmotions = {
             1: { img: "https://cataas.com/cat/angry", msg: "Tệ quá không zay 😿", color: "#ff4d4d" },
@@ -299,7 +339,14 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         stars.forEach(s => {
+            s.tabIndex = 0;
+            s.setAttribute('role', 'button');
+            s.setAttribute('aria-label', `${s.dataset.v} sao`);
+            s.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); s.click(); }
+            });
             s.addEventListener('click', () => {
+                if (sendBtn.disabled) return;
                 rating = parseInt(s.dataset.v);
                 stars.forEach(star => star.classList.toggle('active', star.dataset.v <= rating));
                 const emotion = catEmotions[rating];
@@ -335,18 +382,28 @@ document.addEventListener('DOMContentLoaded', () => {
             emailError.classList.toggle('show', !valid);
         });
 
-        photoInput.addEventListener('change', () => {
+        photoInput.addEventListener('change', async () => {
+            const version = ++photoVersion;
             const file = photoInput.files[0];
             if (!file) return;
-            if (!file.type.startsWith('image/')) {
-                alert("Chỉ chọn được file ảnh thôi nha!");
+            if (!file.type.startsWith('image/') || file.size > 10 * 1024 * 1024) {
+                formStatus.textContent = 'Chọn file ảnh nhỏ hơn 10 MB nhé.';
                 photoInput.value = "";
                 return;
             }
-            const reader = new FileReader();
-            reader.onload = (e) => {
+            photoBusy = true;
+            formStatus.textContent = 'Đang chuẩn bị ảnh...';
+            try {
+                const data = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = () => reject(new Error('Không đọc được ảnh.'));
+                    reader.readAsDataURL(file);
+                });
                 const img = new Image();
-                img.onload = () => {
+                img.src = data;
+                await img.decode();
+                if (version !== photoVersion) return;
                     const MAX_DIM = 800;
                     let { width, height } = img;
                     if (width > height && width > MAX_DIM) {
@@ -362,23 +419,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     photoMime = 'image/jpeg';
                     photoPreview.src = dataUrl;
                     photoPreviewWrap.classList.add('show');
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+                formStatus.textContent = 'Ảnh đã sẵn sàng.';
+            } catch (err) {
+                if (version !== photoVersion) return;
+                photoBase64 = ''; photoMime = '';
+                photoInput.value = '';
+                photoPreviewWrap.classList.remove('show');
+                formStatus.textContent = 'Không mở được ảnh này. Chọn ảnh khác nhé.';
+            } finally { if (version === photoVersion) photoBusy = false; }
         });
 
         removePhotoBtn.addEventListener('click', () => {
+            ++photoVersion;
+            photoBusy = false;
             photoBase64 = ""; photoMime = "";
             photoInput.value = "";
             photoPreview.src = "";
             photoPreviewWrap.classList.remove('show');
+            formStatus.textContent = '';
         });
 
         sendBtn.addEventListener('click', async function() {
             const email = emailInput.value.trim();
-            const service = document.getElementById('service').value;
-            const comment = commentInput.value;
+            if (this.disabled) return;
+            if (photoBusy) { formStatus.textContent = 'Đợi ảnh chuẩn bị xong rồi gửi nhé.'; return; }
+            const service = document.getElementById('service').value.trim();
+            const comment = commentInput.value.trim();
 
             const emailValid = isValidEmail(email);
             emailInput.classList.toggle('input-error', !emailValid);
@@ -392,19 +458,22 @@ document.addEventListener('DOMContentLoaded', () => {
             this.disabled = true;
             const originalText = this.innerText;
             this.innerText = "Đang gửi, đợi xíuuu... 🐾";
+            formStatus.textContent = 'Đang lưu đánh giá...';
+            const data = { email, service, stars: rating, comment, photoBase64, photoMime };
+            const snapshot = JSON.stringify(data);
+            if (!submission || submission.snapshot !== snapshot) submission = { snapshot, requestId: BackendClient.requestId() };
+            const inputs = [emailInput, document.getElementById('service'), commentInput, photoInput, removePhotoBtn];
+            inputs.forEach(input => { input.disabled = true; });
 
             try {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, service, stars: rating, comment, photoBase64, photoMime })
-                });
+                const result = await BackendClient.request('submit', { ...data, requestId: submission.requestId });
 
                 makeItRain();
-                fillThankYouCard(rating, comment);
-                gamification.recordSubmission({ service, stars: rating, comment });
+                fillThankYouCard(data.stars, comment);
+                gamification.recordSubmission({ service, stars: data.stars, comment });
                 if (thanksPopup) thanksPopup.style.display = 'flex';
+                submission = null;
+                formStatus.textContent = 'Đã lưu đánh giá. ' + (result.warning || '');
 
                 emailInput.value = '';
                 emailInput.classList.remove('input-error');
@@ -424,8 +493,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 mascot.style.transform = "scale(1)";
             } catch (e) {
                 console.error(e);
-                alert("Có lỗi rồi, kiểm tra lại URL Script nha!");
+                formStatus.textContent = e.message || 'Chưa gửi được. Nội dung vẫn được giữ lại.';
             } finally {
+                inputs.forEach(input => { input.disabled = false; });
                 this.disabled = false;
                 this.innerText = originalText;
             }
@@ -437,26 +507,62 @@ document.addEventListener('DOMContentLoaded', () => {
             const cardMascotImg = document.getElementById('card-mascot-img');
             cardStars.innerText = '★'.repeat(ratingValue) + '☆'.repeat(5 - ratingValue);
             cardMsg.innerText = commentText && commentText.trim() ? `"${commentText.trim()}"` : "Cảm ơn em đã dành thời gian đánh giá!";
-            cardMascotImg.src = catEmotions[ratingValue] ? `${catEmotions[ratingValue].img}?t=${Date.now()}` : "https://cataas.com/cat/says/Thank%20You";
+            cardMascotImg.src = 'icon-192.png';
         }
 
-        downloadCardBtn.addEventListener('click', () => {
-            const cardEl = document.getElementById('thank-you-card');
+        downloadCardBtn.addEventListener('click', async () => {
             downloadCardBtn.disabled = true;
             downloadCardBtn.innerText = "Đang tạo thiệp...";
-            html2canvas(cardEl, { backgroundColor: null, useCORS: true, scale: 2 }).then((canvas) => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 640;
+                const context = canvas.getContext('2d');
+                context.font = '28px sans-serif';
+                const lines = [];
+                const paragraphs = document.getElementById('card-msg').innerText.split('\n');
+                for (const paragraph of paragraphs) {
+                    let line = '';
+                    for (const character of paragraph) {
+                        if (context.measureText(line + character).width > 530) { lines.push(line); line = ''; }
+                        line += character;
+                    }
+                    lines.push(line);
+                }
+                const visible = lines.slice(0, 20);
+                if (lines.length > 20) visible[19] += '…';
+                canvas.height = 340 + visible.length * 38;
+                const gradient = context.createLinearGradient(0, 0, 640, canvas.height);
+                gradient.addColorStop(0, '#fff9f0'); gradient.addColorStop(1, '#ffe6f0');
+                context.fillStyle = gradient; context.fillRect(0, 0, 640, canvas.height);
+                context.strokeStyle = '#2d3436'; context.lineWidth = 8;
+                context.strokeRect(4, 4, 632, canvas.height - 8);
+                const image = new Image();
+                image.src = 'icon-192.png';
+                try { await image.decode(); context.drawImage(image, 260, 32, 120, 120); }
+                catch (err) { context.font = '70px sans-serif'; context.fillText('🐱', 275, 120); }
+                context.textAlign = 'center';
+                context.fillStyle = '#ff9f43'; context.font = '46px sans-serif';
+                context.fillText(document.getElementById('card-stars').innerText, 320, 220);
+                context.fillStyle = '#2d3436'; context.font = '28px sans-serif';
+                visible.forEach((line, i) => context.fillText(line, 320, 280 + i * 38));
+                context.fillStyle = '#a63660'; context.font = '24px sans-serif';
+                context.fillText('Meow Feedback 🐾', 320, canvas.height - 30);
+                const blob = await new Promise((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error('Không tạo được ảnh.')), 'image/png'));
+                const objectUrl = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.download = `thiep-cam-on-${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
+                link.href = objectUrl;
+                document.body.appendChild(link);
                 link.click();
-                downloadCardBtn.disabled = false;
-                downloadCardBtn.innerText = "💌 Tải thiệp cảm ơn";
-            }).catch((err) => {
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+            } catch (err) {
                 console.error(err);
                 alert("Không tạo được thiệp, thử lại nha!");
+            } finally {
                 downloadCardBtn.disabled = false;
                 downloadCardBtn.innerText = "💌 Tải thiệp cảm ơn";
-            });
+            }
         });
 
         if (closePopup) {
@@ -471,7 +577,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // VIEW 2: ADMIN PANEL
     // ===================================================================
     function initAdminPanel() {
-        let adminKey = sessionStorage.getItem('meow_admin_key') || "";
+        let adminKey = '';
+        try { adminKey = sessionStorage.getItem('meow_admin_key') || ''; } catch (err) { /* Storage may be blocked. */ }
+        let loadVersion = 0;
+        let sessionVersion = 0;
+        let repliesInFlight = 0;
+        const drafts = new Map();
 
         const loginScreen = document.getElementById('login-screen');
         const dashboard = document.getElementById('dashboard');
@@ -485,12 +596,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const feedbackList = document.getElementById('feedback-list');
         const feedbackCount = document.getElementById('feedback-count');
         const cardTemplate = document.getElementById('feedback-card-template');
+        const adminStatus = document.getElementById('admin-status');
 
         if (!loginScreen) return; // an toàn nếu HTML không có admin view
 
         if (adminKey) {
-            showDashboard();
-            loadFeedback();
+            loadFeedback(true);
         }
 
         loginBtn.addEventListener('click', attemptLogin);
@@ -498,15 +609,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function attemptLogin() {
             const key = keyInput.value.trim();
-            if (!key) return;
+            if (!key || loginBtn.disabled) return;
             adminKey = key;
             loginError.classList.remove('show');
             loadFeedback(true);
         }
 
         logoutBtn.addEventListener('click', () => {
-            sessionStorage.removeItem('meow_admin_key');
+            ++loadVersion;
+            ++sessionVersion;
+            repliesInFlight = 0;
+            try { sessionStorage.removeItem('meow_admin_key'); } catch (err) { /* Continue logout. */ }
             adminKey = "";
+            drafts.clear();
+            feedbackList.replaceChildren();
+            feedbackCount.textContent = '';
+            adminStatus.textContent = '';
+            loginBtn.disabled = false;
+            refreshBtn.disabled = false;
+            loading.classList.add('hidden');
             dashboard.classList.add('hidden');
             loginScreen.classList.remove('hidden');
             keyInput.value = "";
@@ -520,36 +641,61 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         async function loadFeedback(isFirstLogin) {
+            if (repliesInFlight > 0) return;
+            const version = ++loadVersion;
+            const key = adminKey;
             loading.classList.remove('hidden');
-            emptyState.classList.add('hidden');
-            feedbackList.innerHTML = "";
+            loginBtn.disabled = true;
+            refreshBtn.disabled = true;
+            loginError.classList.remove('show');
+            adminStatus.textContent = '';
 
             try {
-                const url = `${SCRIPT_URL}?action=list&key=${encodeURIComponent(adminKey)}`;
-                const res = await fetch(url);
-                const json = await res.json();
-
-                if (!json.success) {
-                    loading.classList.add('hidden');
-                    if (isFirstLogin) loginError.classList.add('show');
-                    else alert("Lỗi: " + json.error);
-                    return;
-                }
+                const json = await BackendClient.request('list', { key });
+                if (version !== loadVersion || key !== adminKey) return;
+                if (!Array.isArray(json.data)) throw new Error('Danh sách feedback không hợp lệ. Cập nhật Apps Script.');
 
                 if (isFirstLogin) {
-                    sessionStorage.setItem('meow_admin_key', adminKey);
+                    try { sessionStorage.setItem('meow_admin_key', key); } catch (err) { /* Session remains in memory. */ }
                     showDashboard();
                 }
 
                 renderFeedback(json.data);
             } catch (err) {
+                if (version !== loadVersion || key !== adminKey) return;
                 console.error(err);
-                loading.classList.add('hidden');
-                alert("Không kết nối được tới Apps Script. Kiểm tra lại URL / kết nối mạng nha!");
+                if (err.code === 'AUTH') {
+                    ++sessionVersion;
+                    adminKey = '';
+                    drafts.clear();
+                    feedbackList.replaceChildren();
+                    dashboard.classList.add('hidden');
+                    loginScreen.classList.remove('hidden');
+                    try { sessionStorage.removeItem('meow_admin_key'); } catch (error) { /* Storage may be blocked. */ }
+                }
+                if (isFirstLogin || err.code === 'AUTH') {
+                    loginError.textContent = err.message;
+                    loginError.classList.add('show');
+                } else adminStatus.textContent = err.message;
+            } finally {
+                if (version === loadVersion) {
+                    loading.classList.add('hidden');
+                    loginBtn.disabled = false;
+                    refreshBtn.disabled = false;
+                }
             }
         }
 
         function renderFeedback(items) {
+            feedbackList.querySelectorAll('.feedback-card').forEach(card => {
+                const id = card.dataset.feedbackId;
+                const draft = drafts.get(id) || {};
+                draft.subject = card.querySelector('.reply-subject').value;
+                draft.message = card.querySelector('.reply-message').value;
+                drafts.set(id, draft);
+            });
+            feedbackList.replaceChildren();
+            emptyState.classList.add('hidden');
             loading.classList.add('hidden');
             feedbackCount.innerText = `${items.length} feedback`;
 
@@ -559,23 +705,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             items.forEach((item) => {
+                if (!item || typeof item !== 'object') return;
                 const node = cardTemplate.content.cloneNode(true);
                 const card = node.querySelector('.feedback-card');
 
                 card.querySelector('.card-email').innerText = "📧 " + (item.email || "(không có email)");
                 card.querySelector('.card-service').innerText = "📍 " + (item.service || "");
                 card.querySelector('.card-time').innerText = formatTime(item.timestamp);
-                card.querySelector('.card-stars').innerText = '★'.repeat(item.stars || 0) + '☆'.repeat(5 - (item.stars || 0));
+                const stars = Math.max(0, Math.min(5, Math.floor(Number(item.stars) || 0)));
+                card.querySelector('.card-stars').innerText = '★'.repeat(stars) + '☆'.repeat(5 - stars);
                 card.querySelector('.card-comment').innerText = item.comment || "";
 
                 const photoWrap = card.querySelector('.card-photo-wrap');
-                if (item.photoUrl) {
+                if (typeof item.photoUrl === 'string' && /^https:\/\//.test(item.photoUrl)) {
                     const link = document.createElement('a');
                     link.href = item.photoUrl;
                     link.target = "_blank";
-                    const img = document.createElement('img');
-                    img.src = item.photoUrl;
-                    link.appendChild(img);
+                    link.rel = 'noopener noreferrer';
+                    link.textContent = '📷 Mở ảnh đính kèm';
                     photoWrap.appendChild(link);
                 }
 
@@ -586,10 +733,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const subjectInput = card.querySelector('.reply-subject');
                 const messageInput = card.querySelector('.reply-message');
-                if (replied && item.replyMessage) messageInput.value = item.replyMessage;
+                const draftId = item.feedbackId || `${item.rowIndex}:${item.email}`;
+                card.dataset.feedbackId = draftId;
+                const draft = drafts.get(draftId) || { subject: '', message: item.replyMessage || '', requestId: null, snapshot: null };
+                drafts.set(draftId, draft);
+                subjectInput.value = draft.subject;
+                messageInput.value = draft.message;
 
                 const sendReplyBtn = card.querySelector('.send-reply-btn');
+                const resultEl = card.querySelector('.reply-result');
                 sendReplyBtn.addEventListener('click', async () => {
+                    if (sendReplyBtn.disabled || !adminKey) return;
+                    const session = sessionVersion;
+                    const key = adminKey;
                     const subject = subjectInput.value.trim();
                     const message = messageInput.value.trim();
 
@@ -598,33 +754,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     sendReplyBtn.disabled = true;
                     sendReplyBtn.innerText = "Đang gửi...";
+                    subjectInput.disabled = true;
+                    messageInput.disabled = true;
+                    repliesInFlight++;
+                    refreshBtn.disabled = true;
+                    resultEl.textContent = 'Đang gửi email...';
+                    const snapshot = JSON.stringify({ subject, message });
+                    if (draft.snapshot !== snapshot || !draft.requestId) {
+                        draft.snapshot = snapshot;
+                        draft.requestId = BackendClient.requestId();
+                    }
 
                     try {
-                        const res = await fetch(SCRIPT_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // tránh CORS preflight
-                            body: JSON.stringify({
-                                action: "reply",
-                                key: adminKey,
-                                rowIndex: item.rowIndex,
-                                to: item.email,
-                                subject: subject || "Cảm ơn em vì feedback ❤️",
-                                message
-                            })
+                        const json = await BackendClient.request('reply', {
+                            key, rowIndex: item.rowIndex, feedbackId: item.feedbackId,
+                            to: item.email, subject: subject || 'Cảm ơn em vì feedback ❤️',
+                            message, requestId: draft.requestId
                         });
-                        const json = await res.json();
+                        if (session !== sessionVersion || key !== adminKey) return;
 
                         if (json.success) {
                             statusEl.innerText = "✅ Đã trả lời";
                             statusEl.classList.remove('pending');
                             statusEl.classList.add('replied');
-                        } else {
-                            alert("Lỗi: " + json.error);
+                            resultEl.textContent = json.warning || 'Google đã nhận lệnh gửi email. Nếu chưa thấy thư, kiểm tra mục Spam.';
+                            // Keep this ID for repeated clicks on the same reply to prevent duplicate emails.
                         }
                     } catch (err) {
+                        if (session !== sessionVersion || key !== adminKey) return;
                         console.error(err);
-                        alert("Gửi thất bại, thử lại nha!");
+                        resultEl.textContent = err.message;
                     } finally {
+                        if (session === sessionVersion) repliesInFlight--;
+                        subjectInput.disabled = false;
+                        messageInput.disabled = false;
+                        if (session === sessionVersion) refreshBtn.disabled = repliesInFlight > 0;
                         sendReplyBtn.disabled = false;
                         sendReplyBtn.innerText = "📧 Gửi email trả lời";
                     }
