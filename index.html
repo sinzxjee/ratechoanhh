@@ -61,9 +61,9 @@
 
             <main class="form-container">
                 <div class="input-field">
-                    <label for="user-email">📧 Email của em:</label>
-                    <input type="email" id="user-email" placeholder="example@gmail.com" maxlength="254" required>
-                    <p class="field-error-msg" id="email-error">Email không hợp lệ hoặc bị bỏ trống nha!</p>
+                    <label for="user-email">📧 Email của em (không bắt buộc):</label>
+                    <input type="email" id="user-email" placeholder="Có thể bỏ trống" maxlength="254">
+                    <p class="field-error-msg" id="email-error">Email chưa đúng định dạng nha!</p>
                 </div>
 
                 <div class="input-field">
@@ -77,6 +77,12 @@
                     </div>
                     <p id="star-desc">Đánh giá cho anh nhé</p>
                 </div>
+
+                <section class="criteria-panel" aria-labelledby="criteria-title">
+                    <h2 id="criteria-title">Chấm riêng từng tiêu chí 🐾</h2>
+                    <p>Không bắt buộc · 1 sao: cần cải thiện, 5 sao: rất hài lòng.</p>
+                    <div id="criteria-ratings"></div>
+                </section>
 
                 <div class="input-field">
                     <label for="comment">💬 Nhận xét của ynhi:</label>
@@ -172,6 +178,7 @@
                 </div>
 
                 <p class="card-comment"></p>
+                <div class="card-criteria"></div>
 
                 <div class="card-photo-wrap"></div>
 

@@ -752,3 +752,18 @@ input.input-error, textarea.input-error {
     .dash-header { flex-direction: column; align-items: stretch; }
     .card-top { flex-direction: column; }
 }
+/* Separate service criteria remain optional and usable with the keyboard. */
+.criteria-panel { padding: 16px; margin: 20px 0; background: #fff9f0; border: 2px solid #ffcccc; border-radius: 16px; }
+.criteria-panel h2 { font-size: 18px; margin: 0 0 6px; }
+.criteria-panel > p { font-size: 13px; margin: 0 0 12px; }
+.criterion-row { border: 0; padding: 8px 0; margin: 0; display: flex; gap: 6px; flex-wrap: wrap; }
+.criterion-row legend { font-weight: 700; padding: 0; }
+.criterion-row label { position: relative; cursor: pointer; }
+.criterion-row input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.criterion-row span { display: block; padding: 8px 10px; border: 2px solid #ffc9b0; border-radius: 10px; background: white; font-size: 14px; }
+.criterion-row input:checked + span { background: #ffcf70; border-color: #a65f00; }
+.criterion-row input:focus-visible + span { outline: 3px solid #3975ba; outline-offset: 2px; }
+.criterion-row input:disabled + span { opacity: .65; cursor: wait; }
+.criterion-clear { width: auto; padding: 5px 8px; margin: 0; font-size: 12px; box-shadow: none; }
+.card-criteria { padding: 4px 0 12px; color: #8a4d00; font-size: 14px; }
+.card-criteria p { margin: 4px 0; }

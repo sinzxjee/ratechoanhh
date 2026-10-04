@@ -329,6 +329,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const sendBtn = document.getElementById('send-btn');
         const stars = document.querySelectorAll('#stars span');
         const formStatus = document.getElementById('form-status');
+        const criteriaLabels = { punctuality: 'Đúng giờ', care: 'Chu đáo', attitude: 'Thái độ' };
+        const criteriaInputs = [];
+        Object.entries(criteriaLabels).forEach(([key, label]) => {
+            const group = document.createElement('fieldset');
+            group.className = 'criterion-row';
+            const legend = document.createElement('legend');
+            legend.textContent = label;
+            group.appendChild(legend);
+            for (let score = 1; score <= 5; score++) {
+                const choice = document.createElement('label');
+                const input = document.createElement('input');
+                input.type = 'radio'; input.name = 'criterion-' + key; input.value = score;
+                input.setAttribute('aria-label', `${label}: ${score} sao`);
+                const text = document.createElement('span'); text.textContent = `${score} ★`;
+                choice.append(input, text); group.appendChild(choice); criteriaInputs.push(input);
+            }
+            const clear = document.createElement('button');
+            clear.type = 'button'; clear.className = 'criterion-clear'; clear.textContent = 'Bỏ chọn';
+            clear.setAttribute('aria-label', 'Bỏ chọn ' + label);
+            clear.addEventListener('click', () => { if (!sendBtn.disabled) group.querySelectorAll('input').forEach(input => { input.checked = false; }); });
+            group.appendChild(clear);
+            document.getElementById('criteria-ratings').appendChild(group);
+        });
 
         const catEmotions = {
             1: { img: "https://cataas.com/cat/angry", msg: "Tệ quá không zay 😿", color: "#ff4d4d" },
@@ -377,7 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         emailInput.addEventListener('blur', () => {
-            const valid = isValidEmail(emailInput.value);
+            const valid = !emailInput.value.trim() || isValidEmail(emailInput.value);
             emailInput.classList.toggle('input-error', !valid);
             emailError.classList.toggle('show', !valid);
         });
@@ -385,6 +408,9 @@ document.addEventListener('DOMContentLoaded', () => {
         photoInput.addEventListener('change', async () => {
             const version = ++photoVersion;
             const file = photoInput.files[0];
+            photoBusy = false;
+            photoBase64 = ''; photoMime = '';
+            photoPreview.src = ''; photoPreviewWrap.classList.remove('show');
             if (!file) return;
             if (!file.type.startsWith('image/') || file.size > 10 * 1024 * 1024) {
                 formStatus.textContent = 'Chọn file ảnh nhỏ hơn 10 MB nhé.';
@@ -446,12 +472,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const service = document.getElementById('service').value.trim();
             const comment = commentInput.value.trim();
 
-            const emailValid = isValidEmail(email);
+            const emailValid = !email || isValidEmail(email);
             emailInput.classList.toggle('input-error', !emailValid);
             emailError.classList.toggle('show', !emailValid);
 
             if (!emailValid || !service || !comment || rating === 0) {
-                alert("Điền đủ thông tin (kể cả email) và chấm sao đã bạn ơii! 🐾");
+                alert("Điền tên dịch vụ, nhận xét và chấm sao nhé. Email có thể bỏ trống 🐾");
                 return;
             }
 
@@ -459,10 +485,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const originalText = this.innerText;
             this.innerText = "Đang gửi, đợi xíuuu... 🐾";
             formStatus.textContent = 'Đang lưu đánh giá...';
-            const data = { email, service, stars: rating, comment, photoBase64, photoMime };
+            const criteria = {};
+            criteriaInputs.filter(input => input.checked).forEach(input => { criteria[input.name.replace('criterion-', '')] = Number(input.value); });
+            const data = { email, service, stars: rating, comment, photoBase64, photoMime, criteria };
             const snapshot = JSON.stringify(data);
             if (!submission || submission.snapshot !== snapshot) submission = { snapshot, requestId: BackendClient.requestId() };
-            const inputs = [emailInput, document.getElementById('service'), commentInput, photoInput, removePhotoBtn];
+            const inputs = [emailInput, document.getElementById('service'), commentInput, photoInput, removePhotoBtn, ...criteriaInputs];
             inputs.forEach(input => { input.disabled = true; });
 
             try {
@@ -470,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 makeItRain();
                 fillThankYouCard(data.stars, comment);
-                gamification.recordSubmission({ service, stars: data.stars, comment });
+                gamification.recordSubmission({ service, stars: data.stars, comment, criteria });
                 if (thanksPopup) thanksPopup.style.display = 'flex';
                 submission = null;
                 formStatus.textContent = 'Đã lưu đánh giá. ' + (result.warning || '');
@@ -485,6 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 photoPreview.src = "";
                 photoPreviewWrap.classList.remove('show');
                 rating = 0;
+                criteriaInputs.forEach(input => { input.checked = false; });
                 stars.forEach(star => star.classList.remove('active'));
                 bubble.innerText = "Đánh giá cho anh nhé!!";
                 bubble.style.borderColor = "#ffcccc";
@@ -715,6 +744,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const stars = Math.max(0, Math.min(5, Math.floor(Number(item.stars) || 0)));
                 card.querySelector('.card-stars').innerText = '★'.repeat(stars) + '☆'.repeat(5 - stars);
                 card.querySelector('.card-comment').innerText = item.comment || "";
+                const criteriaWrap = card.querySelector('.card-criteria');
+                Object.entries({ punctuality: 'Đúng giờ', care: 'Chu đáo', attitude: 'Thái độ' }).forEach(([key, label]) => {
+                    const score = item.criteria && Number(item.criteria[key]);
+                    if (!Number.isInteger(score) || score < 1 || score > 5) return;
+                    const line = document.createElement('p');
+                    line.textContent = `${label}: ${'★'.repeat(score)}${'☆'.repeat(5 - score)} (${score}/5)`;
+                    criteriaWrap.appendChild(line);
+                });
 
                 const photoWrap = card.querySelector('.card-photo-wrap');
                 if (typeof item.photoUrl === 'string' && /^https:\/\//.test(item.photoUrl)) {
@@ -742,6 +779,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const sendReplyBtn = card.querySelector('.send-reply-btn');
                 const resultEl = card.querySelector('.reply-result');
+                if (!item.email) {
+                    subjectInput.disabled = true; messageInput.disabled = true; sendReplyBtn.disabled = true;
+                    resultEl.textContent = 'Người gửi không để lại email.';
+                }
                 sendReplyBtn.addEventListener('click', async () => {
                     if (sendReplyBtn.disabled || !adminKey) return;
                     const session = sessionVersion;
