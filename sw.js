@@ -1,40 +1,50 @@
-// Service Worker cho ratechotui - cache app shell để mở được cả khi mất mạng
-const CACHE_NAME = "ratechotui-v1";
+// Network-first app shell; authenticated backend traffic is never intercepted.
+const CACHE_NAME = "ratechotui-v3";
 const ASSETS = [
   "./",
   "./index.html",
   "./style.css",
   "./script.js",
   "./manifest.json",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png",
-  "./icons/apple-touch-icon.png"
+  "./backend-client.js",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./apple-touch-icon.png",
+  "./favicon-32.png",
+  "./favicon-64.png"
 ];
+const ASSET_URLS = new Set(ASSETS.map(asset => new URL(asset, self.location).href));
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+      Promise.all(keys.filter((k) => k.startsWith('ratechotui-') && k !== CACHE_NAME).map((k) => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
-  // Chỉ cache app shell (GET, cùng gốc); không đụng vào request gửi lên Apps Script
-  if (event.request.method !== 'GET') return;
-
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).catch(() => cached);
-    })
-  );
+  const url = new URL(event.request.url);
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
+  url.search = '';
+  if (!ASSET_URLS.has(url.href)) return;
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    try {
+      const response = await fetch(event.request);
+      if (response.ok) {
+        await cache.put(url.href, response.clone());
+        return response;
+      }
+      return await cache.match(url.href) || response;
+    } catch (err) {
+      return await cache.match(url.href) || Response.error();
+    }
+  })());
 });

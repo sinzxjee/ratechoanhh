@@ -12,6 +12,17 @@
 * { box-sizing: border-box; }
 
 .hidden { display: none !important; }
+[hidden] { display: none !important; }
+
+.app-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 0 0 20px; }
+#install-app-btn { background: var(--primary-color); border: 3px solid var(--dark-border); border-radius: 14px; padding: 10px 14px; font: inherit; font-weight: 800; cursor: pointer; box-shadow: 3px 3px 0 var(--dark-border); }
+.install-help { border: 2px solid var(--dark-border); border-radius: 16px; padding: 12px; margin-bottom: 20px; background: #fff9f0; }
+.install-help p { font-size: 0.85rem; line-height: 1.5; }
+.request-status { font-size: 0.9rem; font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; }
+.paw-print { position: absolute; pointer-events: none; z-index: 10000; font-size: 28px; animation: paw-fade 1s forwards; }
+@keyframes paw-fade { to { opacity: 0; } }
+button:disabled { cursor: wait; }
+.stars span:focus-visible { outline: 3px solid #54a0ff; outline-offset: 4px; border-radius: 6px; }
 
 body {
     font-family: 'Quicksand', sans-serif;
@@ -44,6 +55,10 @@ body {
     z-index: 9999;
     text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff;
     transition: transform 0.1s;
+}
+
+@media (hover: none), (pointer: coarse) {
+    #cursor-follower { display: none; }
 }
 
 /* ================= FORM FEEDBACK ================= */

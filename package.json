@@ -1,0 +1,12 @@
+{
+  "name": "ratechotui",
+  "version": "1.1.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/backend.test.cjs && node tests/browser.cjs",
+    "test:backend": "node --test tests/backend.test.cjs",
+    "test:browser": "node tests/browser.cjs"
+  },
+  "devDependencies": { "playwright": "1.62.1" },
+  "engines": { "node": ">=20" }
+}
