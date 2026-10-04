@@ -1,6 +1,6 @@
 /**
  * Deploy together with Bridge.html. Set ADMIN_KEY in Script Properties first.
- * Run setupBackend_ in the editor to authorize Sheets, Drive and Mail.
+ * Run setupBackend in the editor to authorize Sheets, Drive and Mail.
  * Update the EXISTING Web app deployment to a new version to keep its /exec URL.
  */
 const SPREADSHEET_ID = '19VMyZMlWPwnt69FDE1ujU1YzBoycpeHreWCEl3qAuz0';
@@ -194,7 +194,7 @@ function handleReply_(data) {
     } finally { lock.releaseLock(); }
 }
 
-function setupBackend_() {
+function setupBackend() {
     if (!PropertiesService.getScriptProperties().getProperty('ADMIN_KEY')) throw new Error('Cần đặt ADMIN_KEY trong Script Properties trước.');
     getSheet_();
     DriveApp.getRootFolder().getId();
