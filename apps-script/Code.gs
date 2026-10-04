@@ -5,7 +5,7 @@
  */
 const SPREADSHEET_ID = '19VMyZMlWPwnt69FDE1ujU1YzBoycpeHreWCEl3qAuz0';
 const SHEET_NAME = 'Feedback';
-const HEADERS = ['Timestamp', 'Email', 'Service', 'Stars', 'Comment', 'PhotoURL', 'Replied', 'ReplyMessage', 'RequestID', 'ReplyRequestID'];
+const HEADERS = ['Timestamp', 'Email', 'Service', 'Stars', 'Comment', 'PhotoURL', 'Replied', 'ReplyMessage', 'RequestID', 'ReplyRequestID', 'Punctuality', 'Care', 'Attitude'];
 
 function doGet(e) {
     try {
@@ -64,12 +64,12 @@ function getSheet_() {
     if (HEADERS.slice(0, 8).some(function(h, i) { return headers[i] !== h; })) {
         throw new Error('Tab Feedback có cấu trúc cột khác dự kiến. Kiểm tra tiêu đề A1:H1 trước khi ghi.');
     }
-    if (sheet.getMaxColumns() < 10) sheet.insertColumnsAfter(sheet.getMaxColumns(), 10 - sheet.getMaxColumns());
-    const ids = sheet.getRange(1, 9, 1, 2).getValues()[0];
-    if ((ids[0] && ids[0] !== HEADERS[8]) || (ids[1] && ids[1] !== HEADERS[9])) {
-        throw new Error('Cột I/J đang chứa dữ liệu khác; cần dành hai cột cho RequestID và ReplyRequestID.');
+    if (sheet.getMaxColumns() < HEADERS.length) sheet.insertColumnsAfter(sheet.getMaxColumns(), HEADERS.length - sheet.getMaxColumns());
+    const ids = sheet.getRange(1, 9, 1, HEADERS.length - 8).getValues()[0];
+    if (ids.some(function(value, i) { return value && value !== HEADERS[i + 8]; })) {
+        throw new Error('Cột I:M đang chứa dữ liệu khác; cần kiểm tra trước khi thêm cột đánh giá.');
     }
-    sheet.getRange(1, 9, 1, 2).setValues([HEADERS.slice(8)]);
+    sheet.getRange(1, 9, 1, HEADERS.length - 8).setValues([HEADERS.slice(8)]);
     return sheet;
 }
 
@@ -103,11 +103,19 @@ function findId_(sheet, column, id) {
 
 function handleSubmit_(data) {
     const requestId = validRequestId_(data.requestId);
-    const email = validEmail_(data.email);
+    const email = data.email == null || data.email === '' || (typeof data.email === 'string' && !data.email.trim()) ? '' : validEmail_(data.email);
     const service = text_(data.service, 200, 'tên dịch vụ');
     const comment = text_(data.comment, 5000, 'nhận xét');
     const stars = Number(data.stars);
     if (!Number.isInteger(stars) || stars < 1 || stars > 5) throw new Error('Số sao phải từ 1 đến 5.');
+    const criteria = data.criteria == null ? {} : data.criteria;
+    if (typeof criteria !== 'object' || Array.isArray(criteria)) throw new Error('Tiêu chí không hợp lệ.');
+    const scores = ['punctuality', 'care', 'attitude'].map(function(key) {
+        if (criteria[key] == null || criteria[key] === '') return '';
+        const score = Number(criteria[key]);
+        if (!Number.isInteger(score) || score < 1 || score > 5) throw new Error('Điểm tiêu chí phải từ 1 đến 5.');
+        return score;
+    });
     const lock = LockService.getScriptLock();
     lock.waitLock(30000);
     try {
@@ -120,15 +128,14 @@ function handleSubmit_(data) {
                 || data.photoBase64.length > 3000000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(data.photoBase64)) {
                 throw new Error('Ảnh không hợp lệ hoặc quá lớn.');
             }
-            const folders = DriveApp.getFoldersByName('MeowFeedback_Photos');
-            const folder = folders.hasNext() ? folders.next() : DriveApp.createFolder('MeowFeedback_Photos');
+            const folder = getPhotoFolder_();
             const bytes = Utilities.base64Decode(data.photoBase64);
             const file = folder.createFile(Utilities.newBlob(bytes, 'image/jpeg', 'feedback_' + requestId + '.jpg'));
             // Keep uploaded photos private; no automatic public sharing.
             photoUrl = file.getUrl();
             photoWarning = 'Ảnh đã lưu riêng tư trong Drive; admin mở bằng tài khoản sở hữu.';
         }
-        sheet.appendRow([new Date(), email, safeCell_(service), stars, safeCell_(comment), photoUrl, 'No', '', requestId, '']);
+        sheet.appendRow([new Date(), email, safeCell_(service), stars, safeCell_(comment), photoUrl, 'No', '', requestId, ''].concat(scores));
         SpreadsheetApp.flush();
         return { success: true, requestId, warning: photoWarning };
     } finally { lock.releaseLock(); }
@@ -141,7 +148,8 @@ function handleList_() {
             rowIndex: i + 2, timestamp: r[0] instanceof Date ? r[0].toISOString() : String(r[0] || ''),
             email: String(r[1] || ''), service: String(r[2] || ''), stars: Number(r[3]) || 0,
             comment: String(r[4] || ''), photoUrl: String(r[5] || ''), replied: String(r[6] || ''),
-            replyMessage: String(r[7] || ''), feedbackId: String(r[8] || '')
+            replyMessage: String(r[7] || ''), feedbackId: String(r[8] || ''),
+            criteria: { punctuality: Number(r[10]) || null, care: Number(r[11]) || null, attitude: Number(r[12]) || null }
         };
     }).filter(function(r) { return r.email || r.service || r.comment; });
     return { success: true, data: rows.reverse() };
@@ -194,10 +202,22 @@ function handleReply_(data) {
     } finally { lock.releaseLock(); }
 }
 
+function getPhotoFolder_() {
+    const properties = PropertiesService.getScriptProperties();
+    const folderId = properties.getProperty('PHOTO_FOLDER_ID');
+    if (folderId) return DriveApp.getFolderById(folderId);
+    const folders = DriveApp.getFoldersByName('MeowFeedback_Photos');
+    const folder = folders.hasNext() ? folders.next() : DriveApp.createFolder('MeowFeedback_Photos');
+    properties.setProperty('PHOTO_FOLDER_ID', folder.getId());
+    return folder;
+}
+
 function setupBackend() {
     if (!PropertiesService.getScriptProperties().getProperty('ADMIN_KEY')) throw new Error('Cần đặt ADMIN_KEY trong Script Properties trước.');
     getSheet_();
-    DriveApp.getRootFolder().getId();
+    const folder = getPhotoFolder_();
+    const probe = folder.createFile('permission-check.txt', 'Kiểm tra quyền lưu ảnh');
+    probe.setTrashed(true);
     const quota = MailApp.getRemainingDailyQuota();
     console.log('Backend sẵn sàng. Hạn mức email còn lại: ' + quota);
 }
