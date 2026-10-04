@@ -344,11 +344,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 input.setAttribute('aria-label', `${label}: ${score} sao`);
                 const text = document.createElement('span'); text.textContent = `${score} ★`;
                 choice.append(input, text); group.appendChild(choice); criteriaInputs.push(input);
+                input.addEventListener('click', () => {
+                    if (!sendBtn.disabled) showCatReaction(score, text, label);
+                });
             }
             const clear = document.createElement('button');
             clear.type = 'button'; clear.className = 'criterion-clear'; clear.textContent = 'Bỏ chọn';
             clear.setAttribute('aria-label', 'Bỏ chọn ' + label);
-            clear.addEventListener('click', () => { if (!sendBtn.disabled) group.querySelectorAll('input').forEach(input => { input.checked = false; }); });
+            clear.addEventListener('click', () => {
+                if (sendBtn.disabled) return;
+                group.querySelectorAll('input').forEach(input => { input.checked = false; });
+                dismissCatReaction();
+            });
             group.appendChild(clear);
             document.getElementById('criteria-ratings').appendChild(group);
         });
@@ -360,6 +367,52 @@ document.addEventListener('DOMContentLoaded', () => {
             4: { img: "https://cataas.com/cat/says/Great", msg: "Thật sự đỉnh 😻", color: "#54a0ff" },
             5: { img: "https://cataas.com/cat/says/Perfect", msg: "Quá là tuyệt với lun ròii 👑", color: "#ff80ab" }
         };
+        let reactionTimer;
+        let reactionPopup;
+        let reactionAnchor;
+        const catFaces = { 1: '😿', 2: '😾', 3: '😺', 4: '😻', 5: '😽' };
+        function dismissCatReaction() {
+            clearTimeout(reactionTimer);
+            if (reactionPopup) reactionPopup.remove();
+            reactionPopup = null;
+            reactionAnchor = null;
+        }
+        function positionCatReaction() {
+            if (!reactionPopup || !reactionAnchor) return;
+            const rect = reactionAnchor.getBoundingClientRect();
+            if (rect.bottom < 0 || rect.top > innerHeight) { dismissCatReaction(); return; }
+            const width = reactionPopup.offsetWidth;
+            const height = reactionPopup.offsetHeight;
+            reactionPopup.style.left = Math.max(8, Math.min(innerWidth - width - 8, rect.left + rect.width / 2 - width / 2)) + 'px';
+            reactionPopup.style.top = Math.max(8, Math.min(innerHeight - height - 16, rect.top > height + 16 ? rect.top - height - 10 : rect.bottom + 10)) + 'px';
+        }
+        function showCatReaction(score, anchor, label) {
+            dismissCatReaction();
+            const emotion = catEmotions[score];
+            mascot.src = emotion.img;
+            bubble.innerText = `${label}: ${emotion.msg}`;
+            bubble.style.borderColor = emotion.color;
+            bubble.style.boxShadow = `6px 6px 0px ${emotion.color}`;
+            mascot.style.borderColor = emotion.color;
+            mascot.style.transform = `scale(${1 + score * 0.03}) rotate(${score % 2 === 0 ? 5 : -5}deg)`;
+            setTimeout(() => { mascot.style.transform = `scale(${1 + score * 0.03})`; }, 200);
+            const popup = document.createElement('div');
+            popup.className = 'cat-rating-reaction';
+            popup.dataset.rating = String(score); popup.dataset.category = label;
+            popup.setAttribute('role', 'status'); popup.setAttribute('aria-live', 'polite');
+            popup.style.setProperty('--reaction-color', emotion.color);
+            const face = document.createElement('span'); face.className = 'cat-reaction-face';
+            face.textContent = catFaces[score]; face.setAttribute('aria-hidden', 'true');
+            const message = document.createElement('span');
+            message.textContent = `${label} · ${score}/5 sao\n${emotion.msg}`;
+            popup.append(face, message); document.body.appendChild(popup);
+            reactionPopup = popup;
+            reactionAnchor = anchor;
+            positionCatReaction();
+            reactionTimer = setTimeout(dismissCatReaction, 2600);
+        }
+        window.addEventListener('scroll', positionCatReaction, { passive: true });
+        window.addEventListener('resize', positionCatReaction);
 
         stars.forEach(s => {
             s.tabIndex = 0;
@@ -372,16 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (sendBtn.disabled) return;
                 rating = parseInt(s.dataset.v);
                 stars.forEach(star => star.classList.toggle('active', star.dataset.v <= rating));
-                const emotion = catEmotions[rating];
-                mascot.src = `${emotion.img}?t=${Date.now()}`;
-                bubble.innerText = emotion.msg;
-                bubble.style.borderColor = emotion.color;
-                bubble.style.boxShadow = `6px 6px 0px ${emotion.color}`;
-                mascot.style.transform = `scale(${1 + rating * 0.03}) rotate(${rating % 2 === 0 ? 5 : -5}deg)`;
-                mascot.style.borderColor = emotion.color;
-                setTimeout(() => {
-                    mascot.style.transform = `scale(${1 + rating * 0.03}) rotate(0deg)`;
-                }, 200);
+                showCatReaction(rating, s, 'Tổng thể');
             });
         });
 
@@ -501,6 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 gamification.recordSubmission({ service, stars: data.stars, comment, criteria });
                 if (thanksPopup) thanksPopup.style.display = 'flex';
                 submission = null;
+                dismissCatReaction();
                 formStatus.textContent = 'Đã lưu đánh giá. ' + (result.warning || '');
 
                 emailInput.value = '';
