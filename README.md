@@ -14,7 +14,7 @@ Website phản hồi và trang quản lý, có thể cài lên màn hình chính
 4. Project Settings → Script Properties:
    - `ADMIN_KEY`: đặt mật khẩu admin của bạn ở đây, không đưa mật khẩu vào mã repo hay URL.
    - `ALLOWED_ORIGINS`: `https://sinzxjee.github.io` nếu dùng GitHub Pages mặc định. Nếu app chạy ở tên miền khác, dùng đúng origin của app (ví dụ `https://example.com`, không kèm đường dẫn hoặc dấu `/` cuối). Có thể phân tách nhiều origin bằng dấu phẩy. Khi test local, chỉ thêm origin localhost đang dùng rồi bỏ đi khi test xong.
-5. Trong editor, chọn hàm `setupBackend_` rồi Run. Tài khoản sở hữu backend phải cấp các quyền Google Sheets, Drive và gửi email. Hàm này chuẩn bị tiêu đề cột và đọc hạn mức email, **không gửi thư thử**.
+5. Trong editor, chọn hàm `setupBackend` rồi Run. Tài khoản sở hữu backend phải cấp các quyền Google Sheets, Drive và gửi email. Hàm này chuẩn bị tiêu đề cột và đọc hạn mức email, **không gửi thư thử**.
 6. Deploy → Manage deployments → Edit bản **Web app** đang dùng → chọn **New version** → Deploy. Execute as: **Me**; Who has access: **Anyone**. Nếu Google yêu cầu cấp thêm quyền, chủ tài khoản cần tự hoàn thành bước đó.
 7. Nếu cập nhật deployment cũ thì URL `/exec` được giữ nguyên. Nếu tạo deployment mới, thay `SCRIPT_URL` ở `backend-client.js` bằng URL `/exec` mới.
 
@@ -40,7 +40,7 @@ Frontend dùng iframe HTML Service của Google và `google.script.run` để nh
 4. Bấm **Cài app** trên Chrome/Edge. Trên iPhone, dùng Safari → Chia sẻ → Thêm vào Màn hình chính. Đây là cài PWA, không phải file APK.
 5. Mở app sau khi đã tải trang online rồi bật chế độ offline: form và tải thiệp vẫn hoạt động. Gửi feedback/admin cần có mạng; nội dung được giữ lại khi gửi thất bại.
 
-Nếu Google báo hết hạn mức email, đợi hạn mức được khôi phục. Nếu báo thiếu quyền, chạy lại `setupBackend_` bằng tài khoản deploy rồi cập nhật bản deployment. Nếu cột G là `Sending`, kiểm tra thư đã gửi và trạng thái Sheet trước khi gửi tiếp; trạng thái này cố ý ngăn tự gửi trùng khi kết quả gửi chưa chắc chắn.
+Nếu Google báo hết hạn mức email, đợi hạn mức được khôi phục. Nếu báo thiếu quyền, chạy lại `setupBackend` bằng tài khoản deploy rồi cập nhật bản deployment. Nếu cột G là `Sending`, kiểm tra thư đã gửi và trạng thái Sheet trước khi gửi tiếp; trạng thái này cố ý ngăn tự gửi trùng khi kết quả gửi chưa chắc chắn.
 
 ## Chạy test
 
