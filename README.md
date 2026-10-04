@@ -14,13 +14,15 @@ Website phản hồi và trang quản lý, có thể cài lên màn hình chính
 4. Project Settings → Script Properties:
    - `ADMIN_KEY`: đặt mật khẩu admin của bạn ở đây, không đưa mật khẩu vào mã repo hay URL.
    - `ALLOWED_ORIGINS`: `https://sinzxjee.github.io` nếu dùng GitHub Pages mặc định. Nếu app chạy ở tên miền khác, dùng đúng origin của app (ví dụ `https://example.com`, không kèm đường dẫn hoặc dấu `/` cuối). Có thể phân tách nhiều origin bằng dấu phẩy. Khi test local, chỉ thêm origin localhost đang dùng rồi bỏ đi khi test xong.
-5. Trong editor, chọn hàm `setupBackend` rồi Run. Tài khoản sở hữu backend phải cấp các quyền Google Sheets, Drive và gửi email. Hàm này chuẩn bị tiêu đề cột và đọc hạn mức email, **không gửi thư thử**.
+5. Trong editor, chọn hàm `setupBackend` rồi Run. Tài khoản sở hữu backend phải cấp các quyền Google Sheets, **ghi Drive** và gửi email. Quyền chỉ đọc Drive không đủ để lưu ảnh. Hàm này chuẩn bị tiêu đề cột, tạo/chọn thư mục ảnh, tạo một tệp kiểm tra quyền ghi rồi chuyển tệp thử vào thùng rác, và đọc hạn mức email; **không gửi thư thử**. ID thư mục được lưu vào Script Properties `PHOTO_FOLDER_ID` để các lần gửi tiếp dùng đúng thư mục.
 6. Deploy → Manage deployments → Edit bản **Web app** đang dùng → chọn **New version** → Deploy. Execute as: **Me**; Who has access: **Anyone**. Nếu Google yêu cầu cấp thêm quyền, chủ tài khoản cần tự hoàn thành bước đó.
 7. Nếu cập nhật deployment cũ thì URL `/exec` được giữ nguyên. Nếu tạo deployment mới, thay `SCRIPT_URL` ở `backend-client.js` bằng URL `/exec` mới.
 
 Backend dùng `SpreadsheetApp.openById` để mở đúng file trên và lưu vào tab **Feedback**. `gid=1946808283` trong link ban đầu là tab **Trang tính2**, không phải tab Feedback. Không đổi hay ghi đè dữ liệu tab Trang tính2.
 
-Tab Feedback giữ 8 cột cũ A:H. Bản sửa thêm I=`RequestID`, J=`ReplyRequestID` để chống gửi trùng khi người dùng thử lại. Nếu A:H hoặc I:J khác cấu trúc này, backend sẽ báo lỗi thay vì ghi đè dữ liệu hiện có. Nếu chưa có tab Feedback, backend tạo tab này.
+Tab Feedback giữ 8 cột cũ A:H. Bản sửa thêm I=`RequestID`, J=`ReplyRequestID` để chống gửi trùng khi người dùng thử lại; K=`Punctuality` (Đúng giờ), L=`Care` (Chu đáo), M=`Attitude` (Thái độ). Nếu A:H hoặc I:M khác cấu trúc này, backend sẽ báo lỗi thay vì ghi đè dữ liệu hiện có. Nếu chưa có tab Feedback, backend tạo tab này. Các phản hồi cũ không có điểm tiêu chí vẫn hiển thị bình thường.
+
+Email không bắt buộc. Nếu nhập, email vẫn cần đúng định dạng; phản hồi không có email sẽ vô hiệu hóa phần gửi thư ở admin. Ba tiêu chí có thể chấm riêng từ 1–5 sao hoặc bỏ qua, bên cạnh điểm đánh giá chung.
 
 Ảnh đính kèm lưu riêng tư trong Drive của chủ backend. Admin mở link ảnh bằng tài khoản Google sở hữu file; ảnh không tự được công khai.
 
