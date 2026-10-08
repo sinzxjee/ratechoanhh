@@ -1,5 +1,5 @@
 // Network-first app shell; authenticated backend traffic is never intercepted.
-const CACHE_NAME = "ratechotui-v5";
+const CACHE_NAME = "ratechotui-v6";
 const ASSETS = [
   "./",
   "./index.html",
@@ -7,6 +7,11 @@ const ASSETS = [
   "./script.js",
   "./manifest.json",
   "./backend-client.js",
+  "./meme-rating-1.jpg",
+  "./meme-rating-2.jpg",
+  "./meme-rating-3.jpg",
+  "./meme-rating-4.jpg",
+  "./meme-rating-5.png",
   "./icon-192.png",
   "./icon-512.png",
   "./apple-touch-icon.png",

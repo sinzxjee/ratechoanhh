@@ -370,7 +370,14 @@ document.addEventListener('DOMContentLoaded', () => {
         let reactionTimer;
         let reactionPopup;
         let reactionAnchor;
-        const catFaces = { 1: '😿', 2: '😾', 3: '😺', 4: '😻', 5: '😽' };
+        const memeReactions = {
+            1: { caption: 'Ủa… một sao thiệt hả? 🥲', src: 'meme-rating-1.jpg', alt: 'Meme mèo khóc' },
+            2: { caption: 'Hơi cấn nha… 🤨', src: 'meme-rating-2.jpg', alt: 'Meme mèo nhìn nghi ngờ' },
+            3: { caption: 'Cũng ổn áp đó 😌', src: 'meme-rating-3.jpg', alt: 'Meme mèo cười lịch sự' },
+            4: { caption: 'Đỉnh của chóp! 🔥', src: 'meme-rating-4.jpg', alt: 'Meme mèo giơ chân tán thưởng' },
+            5: { caption: 'Quá trời đỉnh luôn! 🎉', src: 'meme-rating-5.png', alt: 'Meme mèo ăn mừng' }
+        };
+        Object.values(memeReactions).forEach(meme => { const image = new Image(); image.src = meme.src; });
         function dismissCatReaction() {
             clearTimeout(reactionTimer);
             if (reactionPopup) reactionPopup.remove();
@@ -401,10 +408,13 @@ document.addEventListener('DOMContentLoaded', () => {
             popup.dataset.rating = String(score); popup.dataset.category = label;
             popup.setAttribute('role', 'status'); popup.setAttribute('aria-live', 'polite');
             popup.style.setProperty('--reaction-color', emotion.color);
-            const face = document.createElement('span'); face.className = 'cat-reaction-face';
-            face.textContent = catFaces[score]; face.setAttribute('aria-hidden', 'true');
-            const message = document.createElement('span');
-            message.textContent = `${label} · ${score}/5 sao\n${emotion.msg}`;
+            const meme = memeReactions[score];
+            const face = document.createElement('img'); face.className = 'rating-meme';
+            face.src = meme.src; face.alt = meme.alt; face.width = 104; face.height = 104;
+            const message = document.createElement('span'); message.className = 'meme-message';
+            const title = document.createElement('strong'); title.textContent = `${label} · ${score}/5 sao`;
+            const caption = document.createElement('span'); caption.className = 'meme-caption'; caption.textContent = meme.caption;
+            message.append(title, caption);
             popup.append(face, message); document.body.appendChild(popup);
             reactionPopup = popup;
             reactionAnchor = anchor;
