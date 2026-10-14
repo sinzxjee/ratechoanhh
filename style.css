@@ -774,3 +774,14 @@ input.input-error, textarea.input-error {
 .meme-caption { display: block; font-size: 16px; line-height: 1.35; margin-top: 5px; }
 @keyframes cat-reaction-pop { from { opacity: 0; transform: translateY(8px) scale(.85); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @media (prefers-reduced-motion: reduce) { .cat-rating-reaction { animation: none; } }
+
+.criterion-row .criterion-cat-choice { width: 56px; padding: 5px 3px; display: flex; flex-direction: column; align-items: center; gap: 2px; transition: background .15s, border-color .15s; }
+.criterion-cat-choice img { display: block; width: 56px; height: 56px; image-rendering: pixelated; object-fit: contain; }
+.criterion-cat-choice small { font-size: 12px; font-weight: 700; }
+@media(max-width: 380px) { .criterion-row { gap: 4px; } .criterion-row .criterion-cat-choice { width: 46px; } .criterion-cat-choice img { width: 46px; height: 50px; } }
+
+.criterion-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.criterion-row .criterion-cat-choice { width: auto; padding: 5px 2px; }
+.criterion-cat-choice img { width: 100%; max-width: 56px; height: 56px; }
+.criterion-cat-choice small { font-size: 11px; white-space: nowrap; }
+.criterion-clear { grid-column: 1 / -1; justify-self: start; }

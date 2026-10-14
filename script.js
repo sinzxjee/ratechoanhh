@@ -342,7 +342,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const input = document.createElement('input');
                 input.type = 'radio'; input.name = 'criterion-' + key; input.value = score;
                 input.setAttribute('aria-label', `${label}: ${score} sao`);
-                const text = document.createElement('span'); text.textContent = `${score} ★`;
+                const text = document.createElement('span'); text.className = 'criterion-cat-choice';
+                const cat = document.createElement('img'); cat.src = `ragdoll-rating-${score}.png`; cat.alt = ''; cat.width = 56; cat.height = 56;
+                const scoreText = document.createElement('small'); scoreText.textContent = `${score} sao`;
+                text.append(cat, scoreText);
                 choice.append(input, text); group.appendChild(choice); criteriaInputs.push(input);
                 input.addEventListener('click', () => {
                     if (!sendBtn.disabled) showCatReaction(score, text, label);
