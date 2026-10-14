@@ -379,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
             2: { img: "ragdoll-rating-2.png", msg: "Cố gắng lên 1 xíu nữa xemm 😿", color: "#ff944d" },
             3: { img: "ragdoll-rating-3.png", msg: "Chắc là cũng ổn thui 😸", color: "#ffd11a" },
             4: { img: "ragdoll-rating-4.png", msg: "Thật sự đỉnh 😻", color: "#54a0ff" },
-            5: { img: "https://cataas.com/cat/says/Perfect", msg: "Quá là tuyệt với lun ròii 👑", color: "#ff80ab" }
+            5: { img: "ragdoll-rating-5.png", msg: "Quá là tuyệt với lun ròii 👑", color: "#ff80ab" }
         };
         let reactionTimer;
         let reactionPopup;
