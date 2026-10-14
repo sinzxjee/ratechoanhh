@@ -331,12 +331,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const formStatus = document.getElementById('form-status');
         const criteriaLabels = { punctuality: 'Đúng giờ', care: 'Chu đáo', attitude: 'Thái độ' };
         const criteriaInputs = [];
+        const resetCriteriaMenus = [];
         Object.entries(criteriaLabels).forEach(([key, label]) => {
             const group = document.createElement('fieldset');
             group.className = 'criterion-row';
             const legend = document.createElement('legend');
             legend.textContent = label;
             group.appendChild(legend);
+            const menu = document.createElement('details'); menu.className = 'cat-dropdown';
+            const summary = document.createElement('summary');
+            const preview = document.createElement('img'); preview.src = 'ragdoll-rating-1.png'; preview.alt = ''; preview.width = 42; preview.height = 42;
+            const selected = document.createElement('b'); selected.textContent = 'Chọn mức hài lòng';
+            summary.append(preview, selected); menu.appendChild(summary);
+            const options = document.createElement('div'); options.className = 'cat-dropdown-options'; menu.appendChild(options); group.appendChild(menu);
+            const resetMenu = () => { selected.textContent = 'Chọn mức hài lòng'; preview.src = 'ragdoll-rating-1.png'; menu.open = false; };
+            resetCriteriaMenus.push(resetMenu);
+            menu.addEventListener('toggle', () => { if (menu.open) document.querySelectorAll('.cat-dropdown').forEach(other => { if (other !== menu) other.open = false; }); });
+            menu.addEventListener('keydown', e => { if (e.key === 'Escape') { menu.open = false; summary.focus(); } });
             for (let score = 1; score <= 5; score++) {
                 const choice = document.createElement('label');
                 const input = document.createElement('input');
@@ -346,9 +357,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cat = document.createElement('img'); cat.src = `ragdoll-rating-${score}.png`; cat.alt = ''; cat.width = 56; cat.height = 56;
                 const scoreText = document.createElement('small'); scoreText.textContent = `${score} sao`;
                 text.append(cat, scoreText);
-                choice.append(input, text); group.appendChild(choice); criteriaInputs.push(input);
+                choice.append(input, text); options.appendChild(choice); criteriaInputs.push(input);
                 input.addEventListener('click', () => {
-                    if (!sendBtn.disabled) showCatReaction(score, text, label);
+                    if (!sendBtn.disabled) { selected.textContent = `${score} sao · ${['','Cần cải thiện','Chưa hài lòng','Ổn áp','Rất tốt','Tuyệt vời'][score]}`; preview.src = cat.src; menu.open = false; summary.focus(); showCatReaction(score, summary, label); }
                 });
             }
             const clear = document.createElement('button');
@@ -357,17 +368,17 @@ document.addEventListener('DOMContentLoaded', () => {
             clear.addEventListener('click', () => {
                 if (sendBtn.disabled) return;
                 group.querySelectorAll('input').forEach(input => { input.checked = false; });
-                dismissCatReaction();
+                dismissCatReaction(); resetMenu(); summary.focus();
             });
-            group.appendChild(clear);
+            options.appendChild(clear);
             document.getElementById('criteria-ratings').appendChild(group);
         });
 
         const catEmotions = {
-            1: { img: "https://cataas.com/cat/angry", msg: "Tệ quá không zay 😿", color: "#ff4d4d" },
-            2: { img: "https://cataas.com/cat/sad", msg: "Cố gắng lên 1 xíu nữa xemm 😿", color: "#ff944d" },
-            3: { img: "https://cataas.com/cat/cute", msg: "Chắc là cũng ổn thui 😸", color: "#ffd11a" },
-            4: { img: "https://cataas.com/cat/says/Great", msg: "Thật sự đỉnh 😻", color: "#54a0ff" },
+            1: { img: "ragdoll-rating-1.png", msg: "Tệ quá không zay 😿", color: "#ff4d4d" },
+            2: { img: "ragdoll-rating-2.png", msg: "Cố gắng lên 1 xíu nữa xemm 😿", color: "#ff944d" },
+            3: { img: "ragdoll-rating-3.png", msg: "Chắc là cũng ổn thui 😸", color: "#ffd11a" },
+            4: { img: "ragdoll-rating-4.png", msg: "Thật sự đỉnh 😻", color: "#54a0ff" },
             5: { img: "https://cataas.com/cat/says/Perfect", msg: "Quá là tuyệt với lun ròii 👑", color: "#ff80ab" }
         };
         let reactionTimer;
@@ -572,11 +583,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 photoPreviewWrap.classList.remove('show');
                 rating = 0;
                 criteriaInputs.forEach(input => { input.checked = false; });
+                resetCriteriaMenus.forEach(reset => reset());
                 stars.forEach(star => star.classList.remove('active'));
                 bubble.innerText = "Đánh giá cho anh nhé!!";
                 bubble.style.borderColor = "#ffcccc";
                 bubble.style.boxShadow = "6px 6px 0px #ffcccc";
-                mascot.src = "https://cataas.com/cat/says/Hello";
+                mascot.src = "ragdoll-rating-1.png";
                 mascot.style.transform = "scale(1)";
             } catch (e) {
                 console.error(e);
