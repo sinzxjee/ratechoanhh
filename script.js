@@ -227,11 +227,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('open-admin-btn').addEventListener('click', showAdmin);
 
         function showAdmin() {
+            document.body.classList.add('admin-mode');
             feedbackView.classList.add('hidden');
             adminView.classList.remove('hidden');
         }
 
         function showFeedback() {
+            document.body.classList.remove('admin-mode');
             adminView.classList.add('hidden');
             feedbackView.classList.remove('hidden');
         }
