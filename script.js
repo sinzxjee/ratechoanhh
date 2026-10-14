@@ -448,6 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
             s.addEventListener('click', () => {
                 if (sendBtn.disabled) return;
                 rating = parseInt(s.dataset.v);
+                document.getElementById('rating-menu-status').textContent = `Tổng thể: ${rating}/5 sao`;
                 stars.forEach(star => star.classList.toggle('active', star.dataset.v <= rating));
                 showCatReaction(rating, s, 'Tổng thể');
             });
@@ -545,7 +546,8 @@ document.addEventListener('DOMContentLoaded', () => {
             emailError.classList.toggle('show', !emailValid);
 
             if (!emailValid || !service || !comment || rating === 0) {
-                alert("Điền tên dịch vụ, nhận xét và chấm sao nhé. Email có thể bỏ trống 🐾");
+                if (rating === 0) { document.getElementById('rating-menu').open = true; document.querySelector('#rating-menu > summary').focus(); }
+                alert('Điền tên dịch vụ, nhận xét và chấm sao nhé 🐾');
                 return;
             }
 
@@ -584,6 +586,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 rating = 0;
                 criteriaInputs.forEach(input => { input.checked = false; });
                 resetCriteriaMenus.forEach(reset => reset());
+                document.getElementById('rating-menu').open = false;
+                document.getElementById('rating-menu-status').textContent = 'Tổng thể và các tiêu chí';
                 stars.forEach(star => star.classList.remove('active'));
                 bubble.innerText = "Đánh giá cho anh nhé!!";
                 bubble.style.borderColor = "#ffcccc";
