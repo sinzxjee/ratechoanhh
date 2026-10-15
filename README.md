@@ -40,7 +40,7 @@ Frontend dùng iframe HTML Service của Google và `google.script.run` để nh
 2. Bấm **Quản lý phản hồi**, đăng nhập bằng ADMIN_KEY đã đặt và kiểm tra form trả lời của dòng vừa tạo.
 3. Gửi trả lời đến email thử do bạn sở hữu. Kiểm tra hộp thư, Spam và trạng thái `Yes` trong cột G. Backend chỉ xác nhận Google đã nhận lệnh gửi; không thể đảm bảo thư tới Inbox thay vì Spam.
 4. Bấm **Cài app** trên Chrome/Edge. Trên iPhone, dùng Safari → Chia sẻ → Thêm vào Màn hình chính. Đây là cài PWA, không phải file APK.
-5. Mở app sau khi đã tải trang online rồi bật chế độ offline: form và tải thiệp vẫn hoạt động. Gửi feedback/admin cần có mạng; nội dung được giữ lại khi gửi thất bại.
+5. Mở app sau khi đã tải trang online rồi bật chế độ offline: giao diện form vẫn hoạt động. Gửi feedback/admin cần có mạng; nội dung được giữ lại khi gửi thất bại.
 
 Nếu Google báo hết hạn mức email, đợi hạn mức được khôi phục. Nếu báo thiếu quyền, chạy lại `setupBackend` bằng tài khoản deploy rồi cập nhật bản deployment. Nếu cột G là `Sending`, kiểm tra thư đã gửi và trạng thái Sheet trước khi gửi tiếp; trạng thái này cố ý ngăn tự gửi trùng khi kết quả gửi chưa chắc chắn.
 

@@ -327,7 +327,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const photoPreviewWrap = document.getElementById('photo-preview-wrap');
         const photoPreview = document.getElementById('photo-preview');
         const removePhotoBtn = document.getElementById('remove-photo');
-        const downloadCardBtn = document.getElementById('download-card-btn');
         const sendBtn = document.getElementById('send-btn');
         const stars = document.querySelectorAll('#stars span');
         const formStatus = document.getElementById('form-status');
@@ -570,7 +569,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await BackendClient.request('submit', { ...data, requestId: submission.requestId });
 
                 makeItRain();
-                fillThankYouCard(data.stars, comment);
                 gamification.recordSubmission({ service, stars: data.stars, comment, criteria });
                 if (thanksPopup) thanksPopup.style.display = 'flex';
                 submission = null;
@@ -605,70 +603,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 inputs.forEach(input => { input.disabled = false; });
                 this.disabled = false;
                 this.innerText = originalText;
-            }
-        });
-
-        function fillThankYouCard(ratingValue, commentText) {
-            const cardStars = document.getElementById('card-stars');
-            const cardMsg = document.getElementById('card-msg');
-            const cardMascotImg = document.getElementById('card-mascot-img');
-            cardStars.innerText = '★'.repeat(ratingValue) + '☆'.repeat(5 - ratingValue);
-            cardMsg.innerText = commentText && commentText.trim() ? `"${commentText.trim()}"` : "Cảm ơn em đã dành thời gian đánh giá!";
-            cardMascotImg.src = 'icon-192.png';
-        }
-
-        downloadCardBtn.addEventListener('click', async () => {
-            downloadCardBtn.disabled = true;
-            downloadCardBtn.innerText = "Đang tạo thiệp...";
-            try {
-                const canvas = document.createElement('canvas');
-                canvas.width = 640;
-                const context = canvas.getContext('2d');
-                context.font = '28px sans-serif';
-                const lines = [];
-                const paragraphs = document.getElementById('card-msg').innerText.split('\n');
-                for (const paragraph of paragraphs) {
-                    let line = '';
-                    for (const character of paragraph) {
-                        if (context.measureText(line + character).width > 530) { lines.push(line); line = ''; }
-                        line += character;
-                    }
-                    lines.push(line);
-                }
-                const visible = lines.slice(0, 20);
-                if (lines.length > 20) visible[19] += '…';
-                canvas.height = 340 + visible.length * 38;
-                const gradient = context.createLinearGradient(0, 0, 640, canvas.height);
-                gradient.addColorStop(0, '#fff9f0'); gradient.addColorStop(1, '#ffe6f0');
-                context.fillStyle = gradient; context.fillRect(0, 0, 640, canvas.height);
-                context.strokeStyle = '#2d3436'; context.lineWidth = 8;
-                context.strokeRect(4, 4, 632, canvas.height - 8);
-                const image = new Image();
-                image.src = 'icon-192.png';
-                try { await image.decode(); context.drawImage(image, 260, 32, 120, 120); }
-                catch (err) { context.font = '70px sans-serif'; context.fillText('🐱', 275, 120); }
-                context.textAlign = 'center';
-                context.fillStyle = '#ff9f43'; context.font = '46px sans-serif';
-                context.fillText(document.getElementById('card-stars').innerText, 320, 220);
-                context.fillStyle = '#2d3436'; context.font = '28px sans-serif';
-                visible.forEach((line, i) => context.fillText(line, 320, 280 + i * 38));
-                context.fillStyle = '#a63660'; context.font = '24px sans-serif';
-                context.fillText('Meow Feedback 🐾', 320, canvas.height - 30);
-                const blob = await new Promise((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error('Không tạo được ảnh.')), 'image/png'));
-                const objectUrl = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.download = `thiep-cam-on-${Date.now()}.png`;
-                link.href = objectUrl;
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-            } catch (err) {
-                console.error(err);
-                alert("Không tạo được thiệp, thử lại nha!");
-            } finally {
-                downloadCardBtn.disabled = false;
-                downloadCardBtn.innerText = "💌 Tải thiệp cảm ơn";
             }
         });
 
