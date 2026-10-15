@@ -886,3 +886,5 @@ body.admin-mode { background: #f6f6f6; background-image: none; color: #181818; p
 #admin-view .loading, #admin-view .empty-state { color: #777; font-size: 14px; font-weight: 400; }
 #admin-view .login-error, #admin-view .request-status { color: #333; font-size: 13px; }
 @media(max-width:480px) { body.admin-mode { padding: 24px 14px; } #admin-view .login-box { padding: 28px 22px; } #admin-view .dash-actions { flex-wrap: wrap; } #admin-view .feedback-card { padding: 18px; } }
+
+#feedback-view #cat-mascot { image-rendering: auto; object-fit: cover; }

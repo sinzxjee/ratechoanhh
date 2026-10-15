@@ -377,11 +377,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const catEmotions = {
-            1: { img: "ragdoll-rating-1.png", msg: "Tệ quá không zay 😿", color: "#ff4d4d" },
-            2: { img: "ragdoll-rating-2.png", msg: "Cố gắng lên 1 xíu nữa xemm 😿", color: "#ff944d" },
-            3: { img: "ragdoll-rating-3.png", msg: "Chắc là cũng ổn thui 😸", color: "#ffd11a" },
-            4: { img: "ragdoll-rating-4.png", msg: "Thật sự đỉnh 😻", color: "#54a0ff" },
-            5: { img: "ragdoll-rating-5.png", msg: "Quá là tuyệt với lun ròii 👑", color: "#ff80ab" }
+            1: { img: "meme-rating-1.jpg", msg: "Tệ quá không zay 😿", color: "#ff4d4d" },
+            2: { img: "meme-rating-2.jpg", msg: "Cố gắng lên 1 xíu nữa xemm 😿", color: "#ff944d" },
+            3: { img: "meme-rating-3.jpg", msg: "Chắc là cũng ổn thui 😸", color: "#ffd11a" },
+            4: { img: "meme-rating-4.jpg", msg: "Thật sự đỉnh 😻", color: "#54a0ff" },
+            5: { img: "meme-rating-5.png", msg: "Quá là tuyệt với lun ròii 👑", color: "#ff80ab" }
         };
         let reactionTimer;
         let reactionPopup;
@@ -413,6 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
             dismissCatReaction();
             const emotion = catEmotions[score];
             mascot.src = emotion.img;
+            mascot.alt = memeReactions[score].alt;
             bubble.innerText = `${label}: ${emotion.msg}`;
             bubble.style.borderColor = emotion.color;
             bubble.style.boxShadow = `6px 6px 0px ${emotion.color}`;
@@ -594,7 +595,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 bubble.innerText = "Đánh giá cho anh nhé!!";
                 bubble.style.borderColor = "#ffcccc";
                 bubble.style.boxShadow = "6px 6px 0px #ffcccc";
-                mascot.src = "ragdoll-rating-1.png";
+                mascot.src = "meme-rating-3.jpg";
+                mascot.alt = "Meme mèo cười lịch sự";
                 mascot.style.transform = "scale(1)";
             } catch (e) {
                 console.error(e);
