@@ -884,3 +884,7 @@ body[data-pet]:not([data-pet="cat"]) #send-btn::before, body[data-pet]:not([data
 body[data-pet]:not([data-pet="cat"]) .pet-theme-button[aria-pressed="true"] { background: var(--pet-soft); border-color: var(--pet-border); color: var(--pet-ink); }
 body[data-pet]:not([data-pet="cat"]) [data-pet-score], body[data-pet]:not([data-pet="cat"]) .cat-dropdown summary img { image-rendering: auto; }
 body[data-pet]:not([data-pet="cat"]) .popup-content { background: var(--pet-paper); border-color: var(--pet-border); }
+
+/* Meme photos fill the existing pet frames. */
+body:not([data-pet="cat"]) .cat-mascot img { object-fit: cover; padding: 0; }
+body:not([data-pet="cat"]) [data-pet-score] { object-fit: cover; border-radius: 12px; }

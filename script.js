@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     let activePet = 'cat';
     function petReaction(score) {
-        return activePet === 'cat' ? null : { src: `theme-${activePet}-${score}.svg`, alt: `${petThemes[activePet].name} · ${score}/5 sao` };
+        return activePet === 'cat' ? null : { src: `meme-${activePet}-${score}.${activePet === 'dog' && (score === 2 || score === 5) ? 'png' : 'jpg'}`, alt: `Meme ${petThemes[activePet].name} · ${score}/5 sao` };
     }
     function petChoiceImage(score) { return petReaction(score)?.src || `ragdoll-rating-${score}.png`; }
     function initPetThemes() {
