@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ratechotui 🐾</title>
-    <link rel="stylesheet" href="style.css?v=13">
+    <link rel="stylesheet" href="style.css?v=14">
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
 
     <!-- PWA: cài được như app thật, dùng offline -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ff9f43">
-    <link rel="icon" href="favicon-32.png?v=13" sizes="32x32" type="image/png">
-    <link rel="icon" href="favicon-64.png?v=13" sizes="64x64" type="image/png">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=13">
+    <link rel="icon" href="favicon-32.png?v=14" sizes="32x32" type="image/png">
+    <link rel="icon" href="favicon-64.png?v=14" sizes="64x64" type="image/png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=14">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ratechotui">
@@ -31,16 +31,7 @@
                     <div class="bubble" id="chat-bubble">Chào em! Dịch vụ hôm nay có làm em vui không z?</div>
                 </div>
                 <p class="cat-eyebrow">Góc nhỏ của ynhi 🐾</p><h1>Phản Hồi Của YNhi</h1>
-                <div class="app-actions">
-                    <button type="button" id="install-app-btn">📲 Cài app</button>
-                    <a id="open-admin-btn" class="link-btn" href="?admin=1" hidden>Quản lý phản hồi</a>
-                </div>
-                <div id="install-help" class="install-help" hidden>
-                    <p><strong>iPhone/iPad:</strong> mở bằng Safari → Chia sẻ → Thêm vào Màn hình chính.</p>
-                    <p><strong>Android:</strong> mở bằng Chrome → menu ⋮ → Cài ứng dụng hoặc Thêm vào màn hình chính.</p>
-                    <p><strong>Máy tính:</strong> mở bằng Chrome/Edge → biểu tượng cài ứng dụng trên thanh địa chỉ. Nếu chưa thấy, tải lại trang khi có mạng.</p>
-                    <button type="button" id="close-install-help" class="link-btn">Đóng hướng dẫn</button>
-                </div>
+                <a id="open-admin-btn" href="?admin=1" hidden>Quản lý phản hồi</a>
             </header>
 
             <div class="cat-paw-trail" aria-hidden="true"><span>🐾</span><span>🐾</span><span>🐾</span></div>
@@ -57,7 +48,7 @@
                 </div>
 
                 <details id="rating-menu" class="rating-menu">
-                    <summary><img src="ragdoll-rating-1.png" alt="" width="42" height="42"><span><strong>Chấm điểm cho anh 🐾</strong><small id="rating-menu-status">Tổng thể và các tiêu chí</small></span></summary>
+                    <summary><img src="ragdoll-rating-1.png" data-pet-score="1" alt="" width="42" height="42"><span><strong>Chấm điểm cho anh 🐾</strong><small id="rating-menu-status">Tổng thể và các tiêu chí</small></span></summary>
                     <div class="rating-menu-content">
                 <div class="star-rating">
                     <div class="stars" id="stars">
@@ -92,8 +83,9 @@
                 </div>
 
                 <button id="send-btn">Ấn vào đây nữa là xong nè 🐾</button>
+                <fieldset id="pet-theme-picker" class="pet-theme-picker"><legend>Chọn bạn đồng hành</legend><div class="pet-theme-options"><button type="button" class="pet-theme-button" data-pet="cat" aria-pressed="true"><span aria-hidden="true">🐱</span>Mèo</button><button type="button" class="pet-theme-button" data-pet="dog" aria-pressed="false"><span aria-hidden="true">🐶</span>Cún</button><button type="button" class="pet-theme-button" data-pet="goat" aria-pressed="false"><span aria-hidden="true">🐐</span>Dê</button><button type="button" class="pet-theme-button" data-pet="otter" aria-pressed="false"><span aria-hidden="true">🦦</span>Rái cá</button></div><p id="pet-theme-status" role="status" aria-live="polite">Mèo đang đồng hành cùng ynhi.</p></fieldset>
                 <p id="form-status" class="request-status" role="status" aria-live="polite"></p>
-                <div class="cat-signoff"><img src="ragdoll-rating-4.png" alt="" width="56" height="56"><span>Mèo đang nghe ynhi kể ♡</span></div>
+                <div class="cat-signoff"><img src="ragdoll-rating-4.png" data-pet-score="4" alt="" width="56" height="56"><span>Mèo đang nghe ynhi kể ♡</span></div>
 
                 <!-- Pop-up Cảm Ơn -->
                 <div id="thanks-popup" class="popup-overlay">
@@ -177,6 +169,6 @@
     </div>
 
     <script src="backend-client.js"></script>
-    <script src="script.js?v=13"></script>
+    <script src="script.js?v=14"></script>
 </body>
 </html>

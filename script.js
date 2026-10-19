@@ -4,11 +4,45 @@ document.addEventListener('DOMContentLoaded', () => {
     const feedbackView = document.getElementById('feedback-view');
     const adminView = document.getElementById('admin-view');
 
+    const petThemes = {
+        cat: { name: 'Mèo', greeting: 'ฅ Meow, ynhi ơi!', trail: '🐾' },
+        dog: { name: 'Cún', greeting: 'Gâu gâu, ynhi ơi!', trail: '🐾' },
+        goat: { name: 'Dê', greeting: 'Be be, ynhi ơi!', trail: '🌿' },
+        otter: { name: 'Rái cá', greeting: 'Rái cá chào ynhi!', trail: '🫧' }
+    };
+    let activePet = 'cat';
+    function petReaction(score) {
+        return activePet === 'cat' ? null : { src: `theme-${activePet}-${score}.svg`, alt: `${petThemes[activePet].name} · ${score}/5 sao` };
+    }
+    function petChoiceImage(score) { return petReaction(score)?.src || `ragdoll-rating-${score}.png`; }
+    function initPetThemes() {
+        function applyPet(key, save) {
+            activePet = Object.prototype.hasOwnProperty.call(petThemes, key) ? key : 'cat';
+            document.body.dataset.pet = activePet;
+            const pet = petThemes[activePet];
+            document.querySelector('.cat-welcome').textContent = pet.greeting;
+            document.querySelector('.cat-signoff span').textContent = `${pet.name} đang nghe ynhi kể ♡`;
+            document.querySelectorAll('.cat-paw-trail span').forEach(el => { el.textContent = pet.trail; });
+            document.querySelectorAll('[data-pet-score]').forEach(img => { img.src = petChoiceImage(Number(img.dataset.petScore)); });
+            const thanks = document.querySelector('.popup-mascot img');
+            thanks.src = activePet === 'cat' ? 'sleeping-cat.gif' : petChoiceImage(5);
+            thanks.alt = activePet === 'cat' ? 'Mèo ngủ cảm ơn' : `${pet.name} cảm ơn`;
+            document.querySelectorAll('.pet-theme-button').forEach(button => { button.setAttribute('aria-pressed', String(button.dataset.pet === activePet)); });
+            document.getElementById('pet-theme-status').textContent = `${pet.name} đang đồng hành cùng ynhi.`;
+            if (save) { try { localStorage.setItem('ratechotui_pet_theme', activePet); } catch (err) { /* The selected theme still works without storage. */ } }
+            document.dispatchEvent(new Event('pet-theme-change'));
+        }
+        let saved = 'cat';
+        try { saved = localStorage.getItem('ratechotui_pet_theme') || 'cat'; } catch (err) { /* Private browsing may block storage. */ }
+        applyPet(saved, false);
+        document.querySelectorAll('.pet-theme-button').forEach(button => button.addEventListener('click', () => applyPet(button.dataset.pet, true)));
+    }
+
     initCursorFollower();
     initPawPrints();
     initServiceWorker();
-    initInstallApp();
     initFeedbackForm();
+    initPetThemes();
     initAdminPanel();
     initViewSwitcher();
 
@@ -25,33 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.readyState === 'complete') register();
             else window.addEventListener('load', register, { once: true });
         }
-    }
-
-    function initInstallApp() {
-        const button = document.getElementById('install-app-btn');
-        const help = document.getElementById('install-help');
-        const close = document.getElementById('close-install-help');
-        let deferred = null;
-        const standalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-        const update = () => { button.hidden = standalone(); };
-        update();
-        window.addEventListener('beforeinstallprompt', event => {
-            event.preventDefault();
-            deferred = event;
-            update();
-        });
-        window.addEventListener('appinstalled', () => { deferred = null; button.hidden = true; help.hidden = true; });
-        window.matchMedia('(display-mode: standalone)').addEventListener('change', update);
-        button.addEventListener('click', async () => {
-            if (!deferred) { help.hidden = !help.hidden; return; }
-            const prompt = deferred;
-            deferred = null;
-            button.disabled = true;
-            try { await prompt.prompt(); await prompt.userChoice; }
-            catch (err) { help.hidden = false; }
-            finally { button.disabled = false; }
-        });
-        close.addEventListener('click', () => { help.hidden = true; });
     }
 
     // ===================================================================
@@ -177,11 +184,11 @@ document.addEventListener('DOMContentLoaded', () => {
             group.appendChild(legend);
             const menu = document.createElement('details'); menu.className = 'cat-dropdown';
             const summary = document.createElement('summary');
-            const preview = document.createElement('img'); preview.src = 'ragdoll-rating-1.png'; preview.alt = ''; preview.width = 42; preview.height = 42;
+            const preview = document.createElement('img'); preview.src = petChoiceImage(1); preview.dataset.petScore = '1'; preview.alt = ''; preview.width = 42; preview.height = 42;
             const selected = document.createElement('b'); selected.textContent = 'Chọn mức hài lòng';
             summary.append(preview, selected); menu.appendChild(summary);
             const options = document.createElement('div'); options.className = 'cat-dropdown-options'; menu.appendChild(options); group.appendChild(menu);
-            const resetMenu = () => { selected.textContent = 'Chọn mức hài lòng'; preview.src = 'ragdoll-rating-1.png'; menu.open = false; };
+            const resetMenu = () => { selected.textContent = 'Chọn mức hài lòng'; preview.src = petChoiceImage(1); preview.dataset.petScore = '1'; menu.open = false; };
             resetCriteriaMenus.push(resetMenu);
             menu.addEventListener('toggle', () => { if (menu.open) document.querySelectorAll('.cat-dropdown').forEach(other => { if (other !== menu) other.open = false; }); });
             menu.addEventListener('keydown', e => { if (e.key === 'Escape') { menu.open = false; summary.focus(); } });
@@ -191,12 +198,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 input.type = 'radio'; input.name = 'criterion-' + key; input.value = score;
                 input.setAttribute('aria-label', `${label}: ${score} sao`);
                 const text = document.createElement('span'); text.className = 'criterion-cat-choice';
-                const cat = document.createElement('img'); cat.src = `ragdoll-rating-${score}.png`; cat.alt = ''; cat.width = 56; cat.height = 56;
+                const cat = document.createElement('img'); cat.src = petChoiceImage(score); cat.dataset.petScore = String(score); cat.alt = ''; cat.width = 56; cat.height = 56;
                 const scoreText = document.createElement('small'); scoreText.textContent = `${score} sao`;
                 text.append(cat, scoreText);
                 choice.append(input, text); options.appendChild(choice); criteriaInputs.push(input);
                 input.addEventListener('click', () => {
-                    if (!sendBtn.disabled) { selected.textContent = `${score} sao · ${['','Cần cải thiện','Chưa hài lòng','Ổn áp','Rất tốt','Tuyệt vời'][score]}`; preview.src = cat.src; menu.open = false; summary.focus(); showCatReaction(score, summary, label); }
+                    if (!sendBtn.disabled) { selected.textContent = `${score} sao · ${['','Cần cải thiện','Chưa hài lòng','Ổn áp','Rất tốt','Tuyệt vời'][score]}`; preview.src = cat.src; preview.dataset.petScore = String(score); menu.open = false; summary.focus(); showCatReaction(score, summary, label); }
                 });
             }
             const clear = document.createElement('button');
@@ -233,8 +240,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let memeRotationTimer;
         function setMascotMeme(score) {
             mascotScore = score;
-            mascot.src = memeReactions[score].src;
-            mascot.alt = memeReactions[score].alt;
+            const reaction = petReaction(score) || memeReactions[score];
+            mascot.src = reaction.src;
+            mascot.alt = reaction.alt;
         }
         function stopMemeRotation() { clearInterval(memeRotationTimer); }
         function startMemeRotation() {
@@ -249,6 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('pagehide', stopMemeRotation);
         window.addEventListener('pageshow', startMemeRotation);
         startMemeRotation();
+        document.addEventListener('pet-theme-change', () => { dismissCatReaction(); setMascotMeme(mascotScore); startMemeRotation(); });
 
         function dismissCatReaction() {
             clearTimeout(reactionTimer);
@@ -281,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
             popup.dataset.rating = String(score); popup.dataset.category = label;
             popup.setAttribute('role', 'status'); popup.setAttribute('aria-live', 'polite');
             popup.style.setProperty('--reaction-color', emotion.color);
-            const meme = memeReactions[score];
+            const meme = { ...memeReactions[score], ...(petReaction(score) || {}) };
             const face = document.createElement('img'); face.className = 'rating-meme';
             face.src = meme.src; face.alt = meme.alt; face.width = 104; face.height = 104;
             const message = document.createElement('span'); message.className = 'meme-message';
