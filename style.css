@@ -847,3 +847,5 @@ body.admin-mode { background: #f6f6f6; background-image: none; color: #181818; p
 @media(max-width:480px) { body.admin-mode { padding: 24px 14px; } #admin-view .login-box { padding: 28px 22px; } #admin-view .dash-actions { flex-wrap: wrap; } #admin-view .feedback-card { padding: 18px; } }
 
 #feedback-view #cat-mascot { image-rendering: auto; object-fit: cover; }
+
+.popup-mascot img { width: 160px; height: 160px; object-fit: contain; border: 0; box-shadow: none; border-radius: 0; background: transparent; }

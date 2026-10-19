@@ -8,8 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initPawPrints();
     initServiceWorker();
     initInstallApp();
-    const gamification = initGamification();
-    initFeedbackForm(gamification);
+    initFeedbackForm();
     initAdminPanel();
     initViewSwitcher();
 
@@ -53,169 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
             finally { button.disabled = false; }
         });
         close.addEventListener('click', () => { help.hidden = true; });
-    }
-
-    // ===================================================================
-    // 🏅 GAMIFICATION: huy hiệu, streak, lịch sử đánh giá (lưu ở máy này)
-    // ===================================================================
-    function initGamification() {
-        const HISTORY_KEY = 'ratechotui_history';
-        const MAX_HISTORY = 50;
-
-        const TIERS = [
-            { min: 0,  emoji: '🐣', title: 'Tân binh' },
-            { min: 5,  emoji: '😺', title: 'Quen mặt' },
-            { min: 10, emoji: '😻', title: 'Thân thiết' },
-            { min: 20, emoji: '👑', title: 'Huyền thoại' },
-            { min: 50, emoji: '🏆', title: 'Bậc thầy' }
-        ];
-
-        const badgeEmoji = document.getElementById('badge-emoji');
-        const badgeTitle = document.getElementById('badge-title');
-        const badgeSub = document.getElementById('badge-sub');
-        const streakChip = document.getElementById('streak-chip');
-        const progressFill = document.getElementById('progress-fill');
-        const toggleHistoryBtn = document.getElementById('toggle-history-btn');
-        const historyList = document.getElementById('history-list');
-
-        if (!badgeEmoji) return { recordSubmission: () => {} }; // an toàn nếu HTML thiếu panel
-
-        function loadHistory() {
-            try {
-                const history = JSON.parse(localStorage.getItem(HISTORY_KEY));
-                if (!Array.isArray(history)) return [];
-                return history.filter(h => h && Number.isInteger(h.stars) && h.stars >= 1 && h.stars <= 5
-                    && Number.isFinite(h.ts) && !isNaN(new Date(h.ts).getTime()))
-                    .map(h => ({ ...h, service: String(h.service || ''), comment: String(h.comment || '') }))
-                    .slice(0, MAX_HISTORY);
-            } catch (e) {
-                return [];
-            }
-        }
-
-        function saveHistory(history) {
-            try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY))); }
-            catch (err) { console.warn('Không lưu được lịch sử trên thiết bị:', err); }
-        }
-
-        function getTierIndex(count) {
-            let idx = 0;
-            for (let i = 0; i < TIERS.length; i++) {
-                if (count >= TIERS[i].min) idx = i;
-            }
-            return idx;
-        }
-
-        function calcStreak(history) {
-            if (history.length === 0) return 0;
-            const dayKeys = new Set(history.map((h) => new Date(h.ts).toDateString()));
-            let streak = 0;
-            const cursor = new Date();
-            cursor.setHours(0, 0, 0, 0);
-
-            // Nếu hôm nay chưa có feedback thì bắt đầu đếm từ hôm qua
-            if (!dayKeys.has(cursor.toDateString())) {
-                cursor.setDate(cursor.getDate() - 1);
-            }
-
-            while (dayKeys.has(cursor.toDateString())) {
-                streak++;
-                cursor.setDate(cursor.getDate() - 1);
-            }
-            return streak;
-        }
-
-        function renderBadge(history) {
-            const count = history.length;
-            const tierIdx = getTierIndex(count);
-            const tier = TIERS[tierIdx];
-            const next = TIERS[tierIdx + 1];
-
-            badgeEmoji.innerText = tier.emoji;
-            badgeTitle.innerText = tier.title;
-            badgeSub.innerText = next
-                ? `${count}/${next.min} lần đánh giá`
-                : `${count} lần đánh giá - Cấp tối đa! 🎉`;
-
-            const percent = next
-                ? Math.min(100, ((count - tier.min) / (next.min - tier.min)) * 100)
-                : 100;
-            progressFill.style.width = percent + '%';
-
-            const streak = calcStreak(history);
-            if (streak >= 2) {
-                streakChip.innerText = `🔥 Streak ${streak} ngày`;
-                streakChip.classList.add('show');
-            } else {
-                streakChip.classList.remove('show');
-            }
-
-            return tierIdx;
-        }
-
-        function renderHistory(history) {
-            historyList.innerHTML = '';
-            if (history.length === 0) {
-                historyList.innerHTML = '<p class="history-empty">Chưa có lần đánh giá nào cả 🐾</p>';
-                return;
-            }
-            history.slice(0, 8).forEach((h) => {
-                const row = document.createElement('div');
-                row.className = 'history-item';
-                const d = new Date(h.ts);
-                row.innerHTML = `
-                    <span class="history-stars">${'★'.repeat(h.stars)}${'☆'.repeat(5 - h.stars)}</span>
-                    <span>${escapeHtml(h.service || '')}</span>
-                    <span>${d.toLocaleDateString('vi-VN')}</span>
-                `;
-                historyList.appendChild(row);
-            });
-        }
-
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.innerText = str;
-            return div.innerHTML;
-        }
-
-        function showBadgeToast(tier) {
-            const toast = document.createElement('div');
-            toast.className = 'badge-toast';
-            toast.innerText = `🎉 Mở khóa huy hiệu mới: ${tier.emoji} ${tier.title}!`;
-            document.body.appendChild(toast);
-            requestAnimationFrame(() => toast.classList.add('show'));
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 400);
-            }, 2500);
-        }
-
-        toggleHistoryBtn.addEventListener('click', () => {
-            const isHidden = historyList.classList.toggle('hidden');
-            toggleHistoryBtn.innerText = isHidden ? 'Xem lịch sử đánh giá ▾' : 'Ẩn lịch sử đánh giá ▴';
-        });
-
-        // Render lần đầu khi load trang
-        let history = loadHistory();
-        renderBadge(history);
-        renderHistory(history);
-
-        function recordSubmission(entry) {
-            const before = loadHistory();
-            const tierBefore = getTierIndex(before.length);
-
-            const updated = [{ ts: Date.now(), ...entry }, ...before].slice(0, MAX_HISTORY);
-            saveHistory(updated);
-
-            const tierIdx = renderBadge(updated);
-            renderHistory(updated);
-
-            if (tierIdx > tierBefore) {
-                showBadgeToast(TIERS[tierIdx]);
-            }
-        }
-
-        return { recordSubmission };
     }
 
     // ===================================================================
@@ -309,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===================================================================
     // VIEW 1: FORM FEEDBACK
     // ===================================================================
-    function initFeedbackForm(gamification) {
+    function initFeedbackForm() {
         let rating = 0;
         let photoBase64 = "";
         let photoMime = "";
@@ -393,6 +229,27 @@ document.addEventListener('DOMContentLoaded', () => {
             5: { caption: 'Quá trời đỉnh luôn! 🎉', src: 'meme-rating-5.png', alt: 'Meme mèo ăn mừng' }
         };
         Object.values(memeReactions).forEach(meme => { const image = new Image(); image.src = meme.src; });
+        let mascotScore = 3;
+        let memeRotationTimer;
+        function setMascotMeme(score) {
+            mascotScore = score;
+            mascot.src = memeReactions[score].src;
+            mascot.alt = memeReactions[score].alt;
+        }
+        function stopMemeRotation() { clearInterval(memeRotationTimer); }
+        function startMemeRotation() {
+            stopMemeRotation();
+            if (document.hidden) return;
+            memeRotationTimer = setInterval(() => {
+                if (feedbackView.classList.contains('hidden') || thanksPopup.style.display === 'flex') return;
+                setMascotMeme(mascotScore % 5 + 1);
+            }, 3000);
+        }
+        document.addEventListener('visibilitychange', startMemeRotation);
+        window.addEventListener('pagehide', stopMemeRotation);
+        window.addEventListener('pageshow', startMemeRotation);
+        startMemeRotation();
+
         function dismissCatReaction() {
             clearTimeout(reactionTimer);
             if (reactionPopup) reactionPopup.remove();
@@ -411,8 +268,8 @@ document.addEventListener('DOMContentLoaded', () => {
         function showCatReaction(score, anchor, label) {
             dismissCatReaction();
             const emotion = catEmotions[score];
-            mascot.src = emotion.img;
-            mascot.alt = memeReactions[score].alt;
+            setMascotMeme(score);
+            startMemeRotation();
             bubble.innerText = `${label}: ${emotion.msg}`;
             bubble.style.borderColor = emotion.color;
             bubble.style.boxShadow = `6px 6px 0px ${emotion.color}`;
@@ -569,7 +426,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await BackendClient.request('submit', { ...data, requestId: submission.requestId });
 
                 makeItRain();
-                gamification.recordSubmission({ service, stars: data.stars, comment, criteria });
                 if (thanksPopup) thanksPopup.style.display = 'flex';
                 submission = null;
                 dismissCatReaction();
@@ -593,8 +449,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 bubble.innerText = "Đánh giá cho anh nhé!!";
                 bubble.style.borderColor = "#ffcccc";
                 bubble.style.boxShadow = "6px 6px 0px #ffcccc";
-                mascot.src = "meme-rating-3.jpg";
-                mascot.alt = "Meme mèo cười lịch sự";
+                setMascotMeme(3);
+                startMemeRotation();
                 mascot.style.transform = "scale(1)";
             } catch (e) {
                 console.error(e);

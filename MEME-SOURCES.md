@@ -9,3 +9,5 @@ Local copies keep reaction images available in the installed app and offline cac
 5. Happy Thumbs Up Cat — https://imgflip.com/memetemplate/303760752/Happy-Thumbs-Up-Cat
 
 Images are third-party meme templates, not original generated artwork.
+
+Sleeping cat GIF in the success popup: https://bestanimations.com/Animals/Mammals/Cats/cats/cute-kitty-animated-gif-12.gif
