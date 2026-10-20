@@ -117,6 +117,25 @@ const server=http.createServer((req,res)=>{
   check(await reduced.evaluate(()=>document.body.dataset.pet)==='goat','Reduced motion failed to change pet');
   await reduced.context().close();
  });
+ await test('Comment typing shows the selected meme peeking without extra controls',async()=>{
+  const p=await page({mobile:true,closed:true});
+  check(await p.locator('.comment-peek.is-peeking').count()===0,'Meme peek appeared before typing');
+  await p.fill('#comment','Mình thấy vui');
+  check(await p.locator('.comment-peek.is-peeking').count()===1,'Meme did not peek on typing');
+  check(await p.evaluate(()=>document.querySelector('#comment-peek-meme').currentSrc===document.querySelector('#cat-mascot').currentSrc),'Peek did not use the current meme');
+  check(await p.locator('.comment-peek button').count()===0,'Peek added a button');
+  await p.locator('.comment-peek').evaluate(el=>new Promise(resolve=>el.addEventListener('animationend',resolve,{once:true})));
+  check(await p.locator('.comment-peek.is-peeking').count()===0,'Peek did not clear');
+  await p.locator('.pet-theme-button[data-pet="dog"]').click();
+  await p.locator('#comment').blur();
+  await p.fill('#comment','Meme cún');
+  check(await p.evaluate(()=>document.querySelector('#comment-peek-meme').currentSrc===document.querySelector('#cat-mascot').currentSrc),'Peek did not follow dog theme');
+  await p.context().close();
+  const reduced=await page({mobile:true,closed:true,reducedMotion:true});
+  await reduced.fill('#comment','Không chuyển động');
+  check(await reduced.locator('.comment-peek.is-peeking').count()===0,'Reduced motion still shows peek animation');
+  await reduced.context().close();
+ });
  await test('Required fields prevent submission',async()=>{const p=await page();await p.click('#send-btn');check(p.calls.length===0,'Unexpected submission');check(!(await p.locator('#email-error').evaluate(e=>e.classList.contains('show'))),'Blank optional email was flagged');await p.context().close();});
  await test('Rating selects correct stars',async()=>{const p=await page();await p.click('#stars [data-v="3"]');check(await p.locator('#stars .active').count()===3,'Wrong stars');await p.context().close();});
  await test('Successful submission resets form without rank tracking',async()=>{const p=await page();await fill(p);await p.click('#send-btn');await p.waitForFunction(()=>document.querySelector('#thanks-popup').style.display==='flex');check(p.calls.length===1,'Wrong request count');check(await p.inputValue('#user-email')==='','Form not reset');check(await p.evaluate(()=>localStorage.getItem('ratechotui_history'))===null,'Rank tracking remains');await p.context().close();});
