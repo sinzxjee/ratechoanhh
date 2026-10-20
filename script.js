@@ -61,8 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
         to.style.backgroundPosition = from.style.backgroundPosition;
     }
     function initPetThemes() {
-        const card = document.querySelector('#feedback-view .container');
-        let flipTimer;
+        let coin = null;
+        let pendingPet = null;
+        let coinFallback;
         function applyPet(key, save) {
             activePet = Object.prototype.hasOwnProperty.call(petThemes, key) ? key : 'cat';
             document.body.dataset.pet = activePet;
@@ -84,16 +85,48 @@ document.addEventListener('DOMContentLoaded', () => {
         try { saved = localStorage.getItem('ratechotui_pet_theme') || 'cat'; } catch (err) { /* Private browsing may block storage. */ }
         applyPet(saved, false);
         document.querySelectorAll('.pet-theme-button').forEach(button => button.addEventListener('click', () => {
-            if (button.dataset.pet === activePet) return;
-            window.clearTimeout(flipTimer);
-            const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            if (reduced) { applyPet(button.dataset.pet, true); return; }
-            card.classList.remove('pet-card-flip');
-            void card.offsetWidth;
-            card.classList.add('pet-card-flip');
-            applyPet(button.dataset.pet, true);
-            flipTimer = window.setTimeout(() => card.classList.remove('pet-card-flip'), 620);
+            const target = button.dataset.pet;
+            if (target === activePet && !coin) return;
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                if (coin) { coin.remove(); coin = null; window.clearTimeout(coinFallback); }
+                applyPet(target, true);
+                return;
+            }
+            pendingPet = target;
+            const score = Number(document.getElementById('cat-mascot').dataset.petScore) || 3;
+            if (coin) {
+                coin.querySelector('.pet-coin-back img').src = memePools[target][score][0];
+                return;
+            }
+            const oldImage = document.getElementById('cat-mascot').currentSrc;
+            const box = button.getBoundingClientRect();
+            const left = Math.max(12, Math.min(window.innerWidth - 124, box.left + box.width / 2 - 56));
+            const top = Math.max(12, Math.min(window.innerHeight - 124, box.top + box.height / 2 - 56));
+            coin = document.createElement('div');
+            coin.className = 'pet-coin-toss';
+            coin.setAttribute('aria-hidden', 'true');
+            coin.style.left = `${left}px`;
+            coin.style.top = `${top}px`;
+            coin.style.setProperty('--coin-rise', `${-(top + 156)}px`);
+            coin.innerHTML = '<div class="pet-coin"><div class="pet-coin-face pet-coin-front"><img alt=""></div><div class="pet-coin-face pet-coin-back"><img alt=""></div></div>';
+            coin.querySelector('.pet-coin-front img').src = oldImage;
+            coin.querySelector('.pet-coin-back img').src = memePools[target][score][0];
+            document.body.appendChild(coin);
+            const currentCoin = coin;
+            const land = () => {
+                if (coin !== currentCoin) return;
+                window.clearTimeout(coinFallback);
+                currentCoin.remove();
+                coin = null;
+                applyPet(pendingPet, true);
+                pendingPet = null;
+            };
+            currentCoin.querySelector('.pet-coin').addEventListener('animationend', land, { once: true });
+            coinFallback = window.setTimeout(land, 1600);
         }));
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && coin) coin.querySelector('.pet-coin').dispatchEvent(new Event('animationend'));
+        });
     }
 
     initCursorFollower();

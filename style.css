@@ -994,15 +994,33 @@ body:not([data-pet="cat"]) [data-pet-score] { object-fit: cover; border-radius: 
 @keyframes guide-draw-shaft { from { stroke-dashoffset: 80; } to { stroke-dashoffset: 0; } }
 @keyframes guide-draw-head { from { stroke-dashoffset: 35; } to { stroke-dashoffset: 0; } }
 
-@keyframes pet-card-turn {
-    0% { transform: perspective(1000px) rotateY(0); }
-    42% { transform: perspective(1000px) rotateY(-82deg) scale(.94); }
-    58% { transform: perspective(1000px) rotateY(-82deg) scale(.94); }
-    100% { transform: perspective(1000px) rotateY(0); }
+body:not(.admin-mode) { transition: background-color .55s ease, color .55s ease; }
+#feedback-view .container { transition: background-color .55s ease, border-color .55s ease, box-shadow .55s ease; }
+.pet-coin-toss { position: fixed; z-index: 10030; width: 112px; height: 112px; pointer-events: none; perspective: 900px; }
+.pet-coin { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; animation: pet-coin-flight 1.2s cubic-bezier(.26,.48,.24,1) both; }
+.pet-coin-face {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border: 5px solid #f4c95c;
+    border-radius: 50%;
+    background: #fff9e8;
+    box-shadow: 0 0 0 3px #8b6845, 0 10px 20px #3c2b284d;
+    backface-visibility: hidden;
 }
-#feedback-view .container.pet-card-flip { transform-origin: center center; animation: pet-card-turn .6s ease-in-out both; }
+.pet-coin-face img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.pet-coin-back { transform: rotateY(180deg); }
+@keyframes pet-coin-flight {
+    0% { opacity: 0; transform: translateY(0) rotateY(0) scale(.55); }
+    10% { opacity: 1; }
+    46% { opacity: 1; transform: translateY(var(--coin-rise)) rotateY(540deg) scale(1.18); }
+    76% { transform: translateY(-44px) rotateY(810deg) scale(1.08); }
+    90% { transform: translateY(8px) rotateY(900deg) scale(1.04); }
+    100% { opacity: 1; transform: translateY(0) rotateY(900deg) scale(1); }
+}
 @media (prefers-reduced-motion: reduce) {
-    #feedback-view .step-guide, .guide-writing .step-guide-note, .guide-writing .step-guide-shaft, .guide-writing .step-guide-head, #feedback-view .container.pet-card-flip { animation: none; }
+    #feedback-view .step-guide, .guide-writing .step-guide-note, .guide-writing .step-guide-shaft, .guide-writing .step-guide-head { animation: none; }
+    body:not(.admin-mode), #feedback-view .container { transition: none; }
 }
 
 /* The selected meme peeks over the comment field once when typing begins. */
