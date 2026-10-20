@@ -104,18 +104,33 @@ const server=http.createServer((req,res)=>{
   check((await p.locator('.step-guide-note').innerText()).includes('gửi'),'Comment did not guide to submit');
   await p.context().close();
  });
- await test('Changing pets flips the card and reduced motion skips the flip',async()=>{
+ await test('Coin toss shows old and new pets before changing the theme',async()=>{
   const p=await page({mobile:true,closed:true});
-  await p.locator('[data-pet="dog"]').click();
-  check(await p.locator('.container.pet-card-flip').count()===1,'Flip class missing');
+  const old=await p.locator('#cat-mascot').getAttribute('src');
+  await p.locator('.pet-theme-button[data-pet="dog"]').click();
+  check(await p.locator('.pet-coin-toss').count()===1,'Coin did not appear');
+  check(await p.evaluate(src=>document.querySelector('.pet-coin-front img').src.endsWith(src),old),'Coin front is not old pet');
+  check((await p.locator('.pet-coin-back img').getAttribute('src')).startsWith('meme-dog-'),'Coin back is not selected pet');
+  check(await p.evaluate(()=>getComputedStyle(document.querySelector('.pet-coin')).animationName==='pet-coin-flight'),'Coin flight missing');
+  check(await p.evaluate(()=>document.body.dataset.pet)==='cat','Theme changed before coin landed');
   await p.waitForFunction(()=>document.body.dataset.pet==='dog');
+  check(await p.locator('.pet-coin-toss').count()===0,'Coin remained after landing');
   check(await p.locator('.pet-theme-button[data-pet="dog"]').getAttribute('aria-pressed')==='true','Pet selection failed');
   await p.context().close();
   const reduced=await page({mobile:true,closed:true,reducedMotion:true});
-  await reduced.locator('[data-pet="goat"]').click();
-  check(await reduced.locator('.container.pet-card-flip').count()===0,'Reduced motion still flipped');
+  await reduced.locator('.pet-theme-button[data-pet="goat"]').click();
+  check(await reduced.locator('.pet-coin-toss').count()===0,'Reduced motion still showed coin');
   check(await reduced.evaluate(()=>document.body.dataset.pet)==='goat','Reduced motion failed to change pet');
   await reduced.context().close();
+ });
+ await test('Latest animal selection wins during a coin toss',async()=>{
+  const p=await page({mobile:true,closed:true});
+  await p.locator('.pet-theme-button[data-pet="dog"]').click();
+  await p.locator('.pet-theme-button[data-pet="otter"]').click();
+  check((await p.locator('.pet-coin-back img').getAttribute('src')).startsWith('meme-otter-'),'Second choice did not update coin');
+  await p.waitForFunction(()=>document.body.dataset.pet==='otter');
+  check(await p.locator('.pet-coin-toss').count()===0,'Coin remained after latest choice');
+  await p.context().close();
  });
  await test('Comment typing shows the selected meme peeking without extra controls',async()=>{
   const p=await page({mobile:true,closed:true});
@@ -127,6 +142,7 @@ const server=http.createServer((req,res)=>{
   await p.locator('.comment-peek').evaluate(el=>new Promise(resolve=>el.addEventListener('animationend',resolve,{once:true})));
   check(await p.locator('.comment-peek.is-peeking').count()===0,'Peek did not clear');
   await p.locator('.pet-theme-button[data-pet="dog"]').click();
+  await p.waitForFunction(()=>document.body.dataset.pet==='dog');
   await p.locator('#comment').blur();
   await p.fill('#comment','Meme cún');
   check(await p.evaluate(()=>document.querySelector('#comment-peek-meme').currentSrc===document.querySelector('#cat-mascot').currentSrc),'Peek did not follow dog theme');
@@ -191,7 +207,7 @@ const server=http.createServer((req,res)=>{
    await p.context().close();
   }
  });
- await test('Pet themes show memes, preserve form data and persist on reload',async()=>{const p=await page({mobile:true});await p.fill('#service','Đưa đi làm');await p.fill('#comment','Nội dung đang viết');check(await p.locator('#pet-theme-picker').evaluate(e=>e.getBoundingClientRect().top>document.querySelector('#send-btn').getBoundingClientRect().bottom),'Picker is not below submit');for(const pet of ['dog','goat','otter']){await p.locator(`[data-pet="${pet}"].pet-theme-button`).click();check(await p.locator('body').getAttribute('data-pet')===pet,'Wrong theme');check(await p.inputValue('#service')==='Đưa đi làm'&&await p.inputValue('#comment')==='Nội dung đang viết','Theme erased form');const images=p.locator('.criterion-cat-choice img');check(await images.evaluateAll(es=>es.every(e=>e.complete&&e.naturalWidth>0)),'Meme missing');await p.click('#stars [data-v="4"]');check(await p.locator('.rating-meme').evaluate(e=>e.complete&&e.naturalWidth>0),'Wrong theme reaction');await p.locator('#pet-theme-picker legend').click();await p.screenshot({path:path.join(output,`theme-${pet}-mobile.png`),fullPage:true});}await p.reload();check(await p.locator('body').getAttribute('data-pet')==='otter','Saved theme lost');check(await p.locator('.pet-theme-button[aria-pressed="true"]').count()===1,'Multiple selections');await p.locator('.pet-theme-button[data-pet="cat"]').press('Enter');check(await p.locator('body').getAttribute('data-pet')==='cat','Keyboard selection failed');check(await p.locator('.popup-mascot img').getAttribute('src')==='sleeping-cat.gif','Cat GIF not restored');await p.context().close();});
+ await test('Pet themes show memes, preserve form data and persist on reload',async()=>{const p=await page({mobile:true});await p.fill('#service','Đưa đi làm');await p.fill('#comment','Nội dung đang viết');check(await p.locator('#pet-theme-picker').evaluate(e=>e.getBoundingClientRect().top>document.querySelector('#send-btn').getBoundingClientRect().bottom),'Picker is not below submit');for(const pet of ['dog','goat','otter']){await p.locator(`[data-pet="${pet}"].pet-theme-button`).click();await p.waitForFunction(expected=>document.body.dataset.pet===expected,pet);check(await p.locator('body').getAttribute('data-pet')===pet,'Wrong theme');check(await p.inputValue('#service')==='Đưa đi làm'&&await p.inputValue('#comment')==='Nội dung đang viết','Theme erased form');const images=p.locator('.criterion-cat-choice img');check(await images.evaluateAll(es=>es.every(e=>e.complete&&e.naturalWidth>0)),'Meme missing');await p.click('#stars [data-v="4"]');check(await p.locator('.rating-meme').evaluate(e=>e.complete&&e.naturalWidth>0),'Wrong theme reaction');await p.locator('#pet-theme-picker legend').click();await p.screenshot({path:path.join(output,`theme-${pet}-mobile.png`),fullPage:true});}await p.reload();check(await p.locator('body').getAttribute('data-pet')==='otter','Saved theme lost');check(await p.locator('.pet-theme-button[aria-pressed="true"]').count()===1,'Multiple selections');await p.locator('.pet-theme-button[data-pet="cat"]').press('Enter');await p.waitForFunction(()=>document.body.dataset.pet==='cat');check(await p.locator('body').getAttribute('data-pet')==='cat','Keyboard selection failed');check(await p.locator('.popup-mascot img').getAttribute('src')==='sleeping-cat.gif','Cat GIF not restored');await p.context().close();});
  await test('Meme pools offer at least twenty cats and ten dogs without repeats on consecutive clicks',async()=>{const source=fs.readFileSync(path.join(root,'script.js'),'utf8');check(source.includes('length: 20')&&source.includes('length: 5'),'Meme pools are too small');const p=await page();const star=p.locator('#stars [data-v="5"]');await star.click();const first=await p.locator('#cat-mascot').getAttribute('data-meme-key');await star.click();check(await p.locator('#cat-mascot').getAttribute('data-meme-key')!==first,'Meme repeated immediately');await p.context().close();});
  await test('Every added meme is an independent image, not a CSS sprite',async()=>{
   const source=fs.readFileSync(path.join(root,'script.js'),'utf8');
