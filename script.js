@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         applyPet(saved, false);
         document.querySelectorAll('.pet-theme-button').forEach(button => button.addEventListener('click', () => {
             const target = button.dataset.pet;
+            if (coin && coin.classList.contains('is-revealing')) coin.finishToss();
             if (target === activePet && !coin) return;
             if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                 if (coin) { coin.remove(); coin = null; window.clearTimeout(coinFallback); }
@@ -107,8 +108,10 @@ document.addEventListener('DOMContentLoaded', () => {
             coin.setAttribute('aria-hidden', 'true');
             coin.style.left = `${left}px`;
             coin.style.top = `${top}px`;
-            coin.style.setProperty('--coin-rise', `${-(top + 156)}px`);
-            coin.innerHTML = '<div class="pet-coin"><div class="pet-coin-face pet-coin-front"><img alt=""></div><div class="pet-coin-face pet-coin-back"><img alt=""></div></div>';
+            coin.style.setProperty('--coin-center-x', `${window.innerWidth / 2 - left - 56}px`);
+            coin.style.setProperty('--coin-center-y', `${window.innerHeight / 2 - top - 56}px`);
+            coin.style.setProperty('--coin-cover', String(Math.hypot(window.innerWidth, window.innerHeight) / 100 + 1));
+            coin.innerHTML = '<div class="pet-coin">' + Array.from({ length: 7 }, (_, i) => `<i class="pet-coin-edge" style="transform:translateZ(${i - 3}px)"></i>`).join('') + '<div class="pet-coin-face pet-coin-front"><img alt=""></div><div class="pet-coin-face pet-coin-back"><img alt=""></div></div>';
             coin.querySelector('.pet-coin-front img').src = oldImage;
             coin.querySelector('.pet-coin-back img').src = memePools[target][score][0];
             document.body.appendChild(coin);
@@ -118,14 +121,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.clearTimeout(coinFallback);
                 currentCoin.remove();
                 coin = null;
-                applyPet(pendingPet, true);
+                if (pendingPet !== activePet) applyPet(pendingPet, true);
                 pendingPet = null;
             };
-            currentCoin.querySelector('.pet-coin').addEventListener('animationend', land, { once: true });
-            coinFallback = window.setTimeout(land, 1600);
+            currentCoin.addEventListener('animationend', event => {
+                if (event.target !== currentCoin) return;
+                if (event.animationName === 'pet-coin-flight') {
+                    applyPet(pendingPet, true);
+                    currentCoin.classList.add('is-revealing');
+                } else if (event.animationName === 'pet-coin-return') land();
+            });
+            currentCoin.finishToss = land;
+            coinFallback = window.setTimeout(land, 2600);
         }));
         document.addEventListener('visibilitychange', () => {
-            if (document.hidden && coin) coin.querySelector('.pet-coin').dispatchEvent(new Event('animationend'));
+            if (document.hidden && coin) coin.finishToss();
         });
     }
 

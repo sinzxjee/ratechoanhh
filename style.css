@@ -996,27 +996,35 @@ body:not([data-pet="cat"]) [data-pet-score] { object-fit: cover; border-radius: 
 
 body:not(.admin-mode) { transition: background-color .55s ease, color .55s ease; }
 #feedback-view .container { transition: background-color .55s ease, border-color .55s ease, box-shadow .55s ease; }
-.pet-coin-toss { position: fixed; z-index: 10030; width: 112px; height: 112px; pointer-events: none; perspective: 900px; }
-.pet-coin { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; animation: pet-coin-flight 1.2s cubic-bezier(.26,.48,.24,1) both; }
-.pet-coin-face {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    border: 5px solid #f4c95c;
-    border-radius: 50%;
-    background: #fff9e8;
-    box-shadow: 0 0 0 3px #8b6845, 0 10px 20px #3c2b284d;
-    backface-visibility: hidden;
-}
+/* Movement and rotation are separate so the opaque face covers every corner. */
+.pet-coin-toss { position: fixed; z-index: 10030; width: 112px; height: 112px; pointer-events: none; animation: pet-coin-flight .85s cubic-bezier(.22,.65,.3,1) both; }
+.pet-coin { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; animation: pet-coin-spin .85s ease-out both; }
+.pet-coin-face, .pet-coin-edge { position: absolute; inset: 0; border-radius: 50%; background: #bc9460; }
+.pet-coin-face { overflow: hidden; border: 5px solid #d8b67b; background: #fff9e8; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: inset 0 0 0 1px #8e7048; }
 .pet-coin-face img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.pet-coin-back { transform: rotateY(180deg); }
+.pet-coin-front { transform: translateZ(4px); }
+.pet-coin-back { transform: rotateY(180deg) translateZ(4px); }
+.pet-coin-toss.is-revealing { animation: pet-coin-return 1.15s ease-in both; }
+.is-revealing .pet-coin { animation: pet-coin-settle 1.15s ease-in both; }
 @keyframes pet-coin-flight {
-    0% { opacity: 0; transform: translateY(0) rotateY(0) scale(.55); }
-    10% { opacity: 1; }
-    46% { opacity: 1; transform: translateY(var(--coin-rise)) rotateY(540deg) scale(1.18); }
-    76% { transform: translateY(-44px) rotateY(810deg) scale(1.08); }
-    90% { transform: translateY(8px) rotateY(900deg) scale(1.04); }
-    100% { opacity: 1; transform: translateY(0) rotateY(900deg) scale(1); }
+    0% { transform: translate(0,0) scale(.65); }
+    38% { transform: translate(0,-160px) scale(1.4); }
+    100% { transform: translate(var(--coin-center-x),var(--coin-center-y)) scale(var(--coin-cover)); }
+}
+@keyframes pet-coin-spin {
+    0% { transform: rotateX(15deg) rotateY(0); }
+    45% { transform: rotateX(-18deg) rotateY(270deg); }
+    100% { transform: rotateX(0) rotateY(540deg); }
+}
+@keyframes pet-coin-return {
+    0%, 48% { transform: translate(var(--coin-center-x),var(--coin-center-y)) scale(var(--coin-cover)); }
+    90% { transform: translate(0,8px) scale(1.05); }
+    100% { transform: translate(0,0) scale(1); }
+}
+@keyframes pet-coin-settle {
+    0%, 48% { transform: rotateX(0) rotateY(540deg); }
+    85% { transform: rotateX(-12deg) rotateY(550deg); }
+    100% { transform: rotateX(0) rotateY(540deg); }
 }
 @media (prefers-reduced-motion: reduce) {
     #feedback-view .step-guide, .guide-writing .step-guide-note, .guide-writing .step-guide-shaft, .guide-writing .step-guide-head { animation: none; }

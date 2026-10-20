@@ -2,6 +2,8 @@
 
 ## 2026-10-20
 
+- Đồng xu có cạnh dày 3D nhẹ, phóng lớn che kín màn hình trước khi đổi con vật, giữ che trong lúc đổi màu rồi thu nhỏ và rơi xuống.
+
 - Khi đổi bạn đồng hành, đồng xu meme hiện con vật cũ ở một mặt và con vật mới ở mặt kia, tung qua mép trên màn hình rồi rơi xuống trước khi đổi giao diện; màu nền chuyển dần. Lựa chọn cuối cùng được giữ nếu chạm liên tiếp, và chế độ giảm chuyển động đổi ngay.
 - Meme chấm sao được phân theo cảm xúc: 1–2 sao chỉ dùng ảnh buồn, khó chịu hoặc ngạc nhiên; 4–5 sao dùng ảnh vui. Ảnh đầu trang đổi mỗi 3 giây nhưng giữ đúng mức sao đã chọn.
 - Meme của con vật đang chọn ló lên cạnh ô nhận xét khi bắt đầu gõ, cúi nhìn xuống rồi biến mất; không thêm nút hay âm thanh và tôn trọng chế độ giảm chuyển động.
