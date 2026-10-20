@@ -88,11 +88,22 @@ document.addEventListener('DOMContentLoaded', () => {
             '#feedback-view .form-container > .input-field:not([hidden]), ' +
             '#rating-menu, #send-btn, #pet-theme-picker, .cat-signoff'
         )];
+        const calls = { cat: 'Meow!', dog: 'Gâu gâu!', goat: 'Be be!', otter: 'Chíp chíp!' };
+        function showPetCall(block) {
+            if (!mobile.matches || reducedMotion.matches || document.body.classList.contains('admin-mode')) return;
+            const word = document.createElement('span');
+            word.className = 'pet-pop-word';
+            word.setAttribute('aria-hidden', 'true');
+            word.textContent = calls[activePet];
+            block.appendChild(word);
+            word.addEventListener('animationend', () => word.remove(), { once: true });
+        }
         const observer = new IntersectionObserver(entries => {
             entries.forEach(entry => {
                 if (!entry.isIntersecting) return;
                 entry.target.classList.add('is-visible');
                 observer.unobserve(entry.target);
+                window.setTimeout(() => showPetCall(entry.target), 180);
             });
         }, { rootMargin: '0px 0px -7% 0px', threshold: 0 });
 

@@ -920,16 +920,45 @@ body:not([data-pet="cat"]) [data-pet-score] { object-fit: cover; border-radius: 
     #feedback-view .stars span { width: 44px; height: 44px; flex-basis: 44px; font-size: 32px; }
 }
 
-/* Reveal form sections as they enter the phone viewport. JS only marks sections below the fold. */
+/* Each newly visible phone section pops once. JS only marks sections below the fold. */
 @media (max-width: 600px) and (prefers-reduced-motion: no-preference) {
+    @keyframes mobile-pop-in {
+        0% { opacity: 0; transform: translateY(38px) scale(.76) rotate(-3deg); }
+        58% { opacity: 1; transform: translateY(-9px) scale(1.11) rotate(1deg); }
+        78% { transform: translateY(3px) scale(.97) rotate(-.5deg); }
+        100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); }
+    }
     #feedback-view .scroll-reveal {
         opacity: 0;
-        transform: translateY(18px);
-        transition: opacity .52s ease var(--reveal-delay, 0ms),
-                    transform .52s cubic-bezier(.2, .7, .2, 1) var(--reveal-delay, 0ms);
+        transform: translateY(38px) scale(.76) rotate(-3deg);
+        transform-origin: center bottom;
+        position: relative;
     }
     #feedback-view .scroll-reveal.is-visible {
         opacity: 1;
-        transform: translateY(0);
+        transform: none;
+        animation: mobile-pop-in .72s cubic-bezier(.22, .7, .18, 1) var(--reveal-delay, 0ms) both;
+    }
+    @keyframes pet-word-float {
+        0% { opacity: 0; transform: translateY(12px) scale(.45) rotate(-10deg); }
+        25% { opacity: 1; transform: translateY(-7px) scale(1.22) rotate(5deg); }
+        65% { opacity: 1; transform: translateY(-21px) scale(1) rotate(-2deg); }
+        100% { opacity: 0; transform: translateY(-48px) scale(.9) rotate(0); }
+    }
+    #feedback-view .pet-pop-word {
+        position: absolute;
+        z-index: 10;
+        right: 8px;
+        top: -18px;
+        padding: 5px 12px;
+        border: 2px solid var(--pet-border, #76574b);
+        border-radius: 18px 18px 18px 3px;
+        background: var(--pet-paper, #fff9ef);
+        color: var(--pet-ink, #684d42);
+        box-shadow: 3px 4px 0 var(--pet-soft, #edd4c0);
+        font: 700 19px 'Quicksand', sans-serif;
+        white-space: nowrap;
+        pointer-events: none;
+        animation: pet-word-float 1.15s ease-out both;
     }
 }
