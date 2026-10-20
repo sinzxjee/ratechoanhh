@@ -96,7 +96,8 @@ const server=http.createServer((req,res)=>{
   await p.fill('#service','Đưa đi làm');await p.locator('#service').blur();
   check((await p.locator('.step-guide-note').innerText()).includes('chấm sao'),'Service did not guide to rating');
   check(await p.locator('.step-guide-shaft').count()===1&&await p.locator('.step-guide-head').count()===1,'Curved drawn arrow missing');
-  await p.locator('.step-guide').click();check(await p.locator('#rating-menu').getAttribute('open')!==null,'Guide did not open rating');
+  check(await p.locator('.step-guide').evaluate(e=>e.tagName==='DIV'&&getComputedStyle(e).pointerEvents==='none'),'Guide must not be a button');
+  await p.locator('#rating-menu > summary').click();
   await p.locator('#stars [data-v="4"]').click();
   check((await p.locator('.step-guide-note').innerText()).includes('nhận xét'),'Rating did not guide to comment');
   await p.fill('#comment','Tốt lắm');await p.locator('#comment').blur();
