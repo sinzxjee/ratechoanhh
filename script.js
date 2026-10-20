@@ -268,23 +268,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const commentInput = document.getElementById('comment');
         // Independent feature switch: set to false to revert step guidance only.
         const ENABLE_STEP_GUIDE = true;
-        const guide = document.createElement('button');
-        guide.type = 'button';
+        const guide = document.createElement('div');
         guide.className = 'step-guide';
         guide.hidden = true;
+        guide.setAttribute('aria-hidden', 'true');
         guide.innerHTML = '<span class="step-guide-note"></span><svg class="step-guide-arrow" viewBox="0 0 42 58" aria-hidden="true"><path class="step-guide-shaft" d="M8 3 C 40 12, 3 32, 25 48"/><path class="step-guide-head" d="M13 43 L25 49 L31 37"/></svg>';
         const guideNote = guide.querySelector('.step-guide-note');
-        let guideTarget = null;
         function updateGuide() {
             if (!ENABLE_STEP_GUIDE) return;
             if (sendBtn.disabled || thanksPopup.style.display === 'flex') { guide.hidden = true; return; }
             let anchor;
             if (commentInput.value.trim() && rating > 0 && serviceInput.value.trim()) {
-                anchor = commentInput.closest('.input-field'); guideTarget = sendBtn; guideNote.textContent = 'Xong rồi! Bấm gửi nhé';
+                anchor = commentInput.closest('.input-field'); guideNote.textContent = 'Xong rồi! Bấm gửi nhé';
             } else if (rating > 0 && serviceInput.value.trim()) {
-                anchor = ratingMenu; guideTarget = commentInput; guideNote.textContent = 'Tiếp theo: viết nhận xét';
+                anchor = ratingMenu; guideNote.textContent = 'Tiếp theo: viết nhận xét';
             } else if (serviceInput.value.trim()) {
-                anchor = serviceInput.closest('.input-field'); guideTarget = ratingMenu; guideNote.textContent = 'Tiếp theo: chấm sao';
+                anchor = serviceInput.closest('.input-field'); guideNote.textContent = 'Tiếp theo: chấm sao';
             } else { guide.hidden = true; return; }
             anchor.insertAdjacentElement('afterend', guide);
             guide.hidden = false;
@@ -292,12 +291,6 @@ document.addEventListener('DOMContentLoaded', () => {
             void guide.offsetWidth;
             guide.classList.add('guide-writing');
         }
-        guide.addEventListener('click', () => {
-            if (guideTarget === ratingMenu) ratingMenu.open = true;
-            guideTarget.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center' });
-            if (guideTarget === commentInput || guideTarget === sendBtn) guideTarget.focus({ preventScroll: true });
-            else ratingMenu.querySelector('summary').focus({ preventScroll: true });
-        });
         if (ENABLE_STEP_GUIDE) {
             serviceInput.addEventListener('blur', updateGuide);
             serviceInput.addEventListener('input', () => { if (!serviceInput.value.trim()) updateGuide(); });

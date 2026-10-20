@@ -979,7 +979,7 @@ body:not([data-pet="cat"]) [data-pet-score] { object-fit: cover; border-radius: 
     color: var(--pet-ink, #76564b);
     box-shadow: none;
     font: 700 24px 'Caveat', 'Segoe Print', cursive;
-    cursor: pointer;
+    pointer-events: none;
     animation: guide-appear .32s ease-out both;
 }
 .step-guide-note { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; }
@@ -989,7 +989,6 @@ body:not([data-pet="cat"]) [data-pet-score] { object-fit: cover; border-radius: 
 .step-guide-head { stroke-dasharray: 35; stroke-dashoffset: 0; }
 .guide-writing .step-guide-shaft { animation: guide-draw-shaft .62s ease-in-out .52s both; }
 .guide-writing .step-guide-head { animation: guide-draw-head .22s ease-out 1.12s both; }
-.step-guide:focus-visible { outline: 3px solid #3975ba; outline-offset: 3px; }
 @keyframes guide-appear { from { opacity: 0; transform: translateY(-9px) scale(.9); } to { opacity: 1; transform: none; } }
 @keyframes guide-handwrite { from { width: 0; } to { width: 100%; } }
 @keyframes guide-draw-shaft { from { stroke-dashoffset: 80; } to { stroke-dashoffset: 0; } }
