@@ -888,3 +888,34 @@ body[data-pet]:not([data-pet="cat"]) .popup-content { background: var(--pet-pape
 /* Meme photos fill the existing pet frames. */
 body:not([data-pet="cat"]) .cat-mascot img { object-fit: cover; padding: 0; }
 body:not([data-pet="cat"]) [data-pet-score] { object-fit: cover; border-radius: 12px; }
+
+/* Every rating control shows a randomly selected meme beneath its star. */
+#feedback-view .stars span {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    flex: 0 0 52px;
+    border: 3px solid var(--pet-border, #76574b);
+    border-radius: 14px;
+    color: #fff;
+    font-size: 38px;
+    -webkit-text-stroke: 2px #30383b;
+    text-shadow: 0 2px 2px #202020;
+    box-shadow: 0 3px 0 #30383b;
+    overflow: hidden;
+}
+#feedback-view .stars span.active,
+#feedback-view .stars span.active ~ span { border-color: #ffcc24; color: #ffeb3b; }
+#feedback-view [data-pet-score],
+#feedback-view .rating-meme,
+#feedback-view #cat-mascot { image-rendering: auto; background-repeat: no-repeat; }
+#feedback-view .cat-dropdown summary img,
+#feedback-view .criterion-cat-choice img,
+#feedback-view .rating-menu > summary img,
+#feedback-view .cat-signoff img { object-fit: cover; border-radius: 10px; }
+#feedback-view .popup-mascot img { background-repeat: no-repeat; }
+.rating-meme { background-repeat: no-repeat; }
+@media(max-width: 380px) {
+    #feedback-view .stars span { width: 44px; height: 44px; flex-basis: 44px; font-size: 32px; }
+}

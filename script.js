@@ -11,10 +11,38 @@ document.addEventListener('DOMContentLoaded', () => {
         otter: { name: 'Rái cá', greeting: 'Rái cá chào ynhi!', trail: '🫧' }
     };
     let activePet = 'cat';
-    function petReaction(score) {
-        return activePet === 'cat' ? null : { src: `meme-${activePet}-${score}.${activePet === 'dog' && (score === 2 || score === 5) ? 'png' : 'jpg'}`, alt: `Meme ${petThemes[activePet].name} · ${score}/5 sao` };
+    const transparentPixel = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+    const memePools = {
+        cat: [1, 2, 3, 4, 5].map(n => ({ src: `meme-rating-${n}.${n === 5 ? 'png' : 'jpg'}` }))
+            .concat(Array.from({ length: 20 }, (_, index) => ({ sheet: 'meme-cat-sheet.png', index, columns: 5, rows: 4 }))),
+        dog: [1, 2, 3, 4, 5].map(n => ({ src: `meme-dog-${n}.${n === 2 || n === 5 ? 'png' : 'jpg'}` }))
+            .concat(Array.from({ length: 5 }, (_, index) => ({ sheet: 'meme-dog-sheet.png', index, columns: 5, rows: 1, size: '527% 100%', x: [0, 22.8, 46.5, 70, 93.6][index] }))),
+        goat: [1, 2, 3, 4, 5].map(n => ({ src: `meme-goat-${n}.jpg` })),
+        otter: [1, 2, 3, 4, 5].map(n => ({ src: `meme-otter-${n}.jpg` }))
+    };
+    function paintMeme(element, score, pet = activePet) {
+        const pool = memePools[pet];
+        const previous = element.dataset.memeKey;
+        const choices = pool.map((_, index) => index).filter(index => String(index) !== previous);
+        const index = choices[Math.floor(Math.random() * choices.length)];
+        const meme = pool[index];
+        element.dataset.memeKey = String(index);
+        element.dataset.petScore = String(score);
+        element.setAttribute('aria-label', `${petThemes[pet].name} · ${score}/5 sao`);
+        element.style.backgroundImage = meme.sheet ? `url("${meme.sheet}")` : '';
+        element.style.backgroundSize = meme.sheet ? (meme.size || `${meme.columns * 100}% ${meme.rows * 100}%`) : '';
+        element.style.backgroundPosition = meme.sheet ? `${meme.x ?? (meme.index % meme.columns) * 100 / (meme.columns - 1)}% ${Math.floor(meme.index / meme.columns) * 100 / Math.max(1, meme.rows - 1)}%` : '';
+        if (element.tagName === 'IMG') element.src = meme.sheet ? transparentPixel : meme.src;
+        else if (!meme.sheet) { element.style.backgroundImage = `url("${meme.src}")`; element.style.backgroundSize = 'cover'; element.style.backgroundPosition = 'center'; }
     }
-    function petChoiceImage(score) { return petReaction(score)?.src || `ragdoll-rating-${score}.png`; }
+    function copyMeme(from, to) {
+        to.src = from.src;
+        to.dataset.memeKey = from.dataset.memeKey;
+        to.dataset.petScore = from.dataset.petScore;
+        to.style.backgroundImage = from.style.backgroundImage;
+        to.style.backgroundSize = from.style.backgroundSize;
+        to.style.backgroundPosition = from.style.backgroundPosition;
+    }
     function initPetThemes() {
         function applyPet(key, save) {
             activePet = Object.prototype.hasOwnProperty.call(petThemes, key) ? key : 'cat';
@@ -23,9 +51,10 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelector('.cat-welcome').textContent = pet.greeting;
             document.querySelector('.cat-signoff span').textContent = `${pet.name} đang nghe ynhi kể ♡`;
             document.querySelectorAll('.cat-paw-trail span').forEach(el => { el.textContent = pet.trail; });
-            document.querySelectorAll('[data-pet-score]').forEach(img => { img.src = petChoiceImage(Number(img.dataset.petScore)); });
+            document.querySelectorAll('[data-pet-score]').forEach(img => paintMeme(img, Number(img.dataset.petScore)));
             const thanks = document.querySelector('.popup-mascot img');
-            thanks.src = activePet === 'cat' ? 'sleeping-cat.gif' : petChoiceImage(5);
+            if (activePet === 'cat') { thanks.src = 'sleeping-cat.gif'; thanks.style.backgroundImage = ''; }
+            else paintMeme(thanks, 5);
             thanks.alt = activePet === 'cat' ? 'Mèo ngủ cảm ơn' : `${pet.name} cảm ơn`;
             document.querySelectorAll('.pet-theme-button').forEach(button => { button.setAttribute('aria-pressed', String(button.dataset.pet === activePet)); });
             document.getElementById('pet-theme-status').textContent = `${pet.name} đang đồng hành cùng ynhi.`;
@@ -184,11 +213,11 @@ document.addEventListener('DOMContentLoaded', () => {
             group.appendChild(legend);
             const menu = document.createElement('details'); menu.className = 'cat-dropdown';
             const summary = document.createElement('summary');
-            const preview = document.createElement('img'); preview.src = petChoiceImage(1); preview.dataset.petScore = '1'; preview.alt = ''; preview.width = 42; preview.height = 42;
+            const preview = document.createElement('img'); preview.alt = ''; preview.width = 42; preview.height = 42; paintMeme(preview, 1);
             const selected = document.createElement('b'); selected.textContent = 'Chọn mức hài lòng';
             summary.append(preview, selected); menu.appendChild(summary);
             const options = document.createElement('div'); options.className = 'cat-dropdown-options'; menu.appendChild(options); group.appendChild(menu);
-            const resetMenu = () => { selected.textContent = 'Chọn mức hài lòng'; preview.src = petChoiceImage(1); preview.dataset.petScore = '1'; menu.open = false; };
+            const resetMenu = () => { selected.textContent = 'Chọn mức hài lòng'; paintMeme(preview, 1); menu.open = false; };
             resetCriteriaMenus.push(resetMenu);
             menu.addEventListener('toggle', () => { if (menu.open) document.querySelectorAll('.cat-dropdown').forEach(other => { if (other !== menu) other.open = false; }); });
             menu.addEventListener('keydown', e => { if (e.key === 'Escape') { menu.open = false; summary.focus(); } });
@@ -198,12 +227,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 input.type = 'radio'; input.name = 'criterion-' + key; input.value = score;
                 input.setAttribute('aria-label', `${label}: ${score} sao`);
                 const text = document.createElement('span'); text.className = 'criterion-cat-choice';
-                const cat = document.createElement('img'); cat.src = petChoiceImage(score); cat.dataset.petScore = String(score); cat.alt = ''; cat.width = 56; cat.height = 56;
+                const cat = document.createElement('img'); cat.alt = ''; cat.width = 56; cat.height = 56; paintMeme(cat, score);
                 const scoreText = document.createElement('small'); scoreText.textContent = `${score} sao`;
                 text.append(cat, scoreText);
                 choice.append(input, text); options.appendChild(choice); criteriaInputs.push(input);
                 input.addEventListener('click', () => {
-                    if (!sendBtn.disabled) { selected.textContent = `${score} sao · ${['','Cần cải thiện','Chưa hài lòng','Ổn áp','Rất tốt','Tuyệt vời'][score]}`; preview.src = cat.src; preview.dataset.petScore = String(score); menu.open = false; summary.focus(); showCatReaction(score, summary, label); }
+                    if (!sendBtn.disabled) { selected.textContent = `${score} sao · ${['','Cần cải thiện','Chưa hài lòng','Ổn áp','Rất tốt','Tuyệt vời'][score]}`; copyMeme(cat, preview); menu.open = false; summary.focus(); showCatReaction(score, summary, label); }
                 });
             }
             const clear = document.createElement('button');
@@ -240,9 +269,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let memeRotationTimer;
         function setMascotMeme(score) {
             mascotScore = score;
-            const reaction = petReaction(score) || memeReactions[score];
-            mascot.src = reaction.src;
-            mascot.alt = reaction.alt;
+            paintMeme(mascot, score);
+            mascot.alt = `Meme ${petThemes[activePet].name} ngẫu nhiên`;
         }
         function stopMemeRotation() { clearInterval(memeRotationTimer); }
         function startMemeRotation() {
@@ -257,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('pagehide', stopMemeRotation);
         window.addEventListener('pageshow', startMemeRotation);
         startMemeRotation();
-        document.addEventListener('pet-theme-change', () => { dismissCatReaction(); setMascotMeme(mascotScore); startMemeRotation(); });
+        document.addEventListener('pet-theme-change', () => { dismissCatReaction(); stars.forEach(star => { paintMeme(star, Number(star.dataset.v)); star.setAttribute('aria-label', `${star.dataset.v} sao`); }); setMascotMeme(mascotScore); startMemeRotation(); });
 
         function dismissCatReaction() {
             clearTimeout(reactionTimer);
@@ -290,12 +318,11 @@ document.addEventListener('DOMContentLoaded', () => {
             popup.dataset.rating = String(score); popup.dataset.category = label;
             popup.setAttribute('role', 'status'); popup.setAttribute('aria-live', 'polite');
             popup.style.setProperty('--reaction-color', emotion.color);
-            const meme = { ...memeReactions[score], ...(petReaction(score) || {}) };
             const face = document.createElement('img'); face.className = 'rating-meme';
-            face.src = meme.src; face.alt = meme.alt; face.width = 104; face.height = 104;
+            face.alt = `Meme ${petThemes[activePet].name} ngẫu nhiên`; face.width = 104; face.height = 104; paintMeme(face, score);
             const message = document.createElement('span'); message.className = 'meme-message';
             const title = document.createElement('strong'); title.textContent = `${label} · ${score}/5 sao`;
-            const caption = document.createElement('span'); caption.className = 'meme-caption'; caption.textContent = meme.caption;
+            const caption = document.createElement('span'); caption.className = 'meme-caption'; caption.textContent = memeReactions[score].caption;
             message.append(title, caption);
             popup.append(face, message); document.body.appendChild(popup);
             reactionPopup = popup;
@@ -307,6 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('resize', positionCatReaction);
 
         stars.forEach(s => {
+            paintMeme(s, Number(s.dataset.v));
             s.tabIndex = 0;
             s.setAttribute('role', 'button');
             s.setAttribute('aria-label', `${s.dataset.v} sao`);
@@ -318,6 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 rating = parseInt(s.dataset.v);
                 document.getElementById('rating-menu-status').textContent = `Tổng thể: ${rating}/5 sao`;
                 stars.forEach(star => star.classList.toggle('active', star.dataset.v <= rating));
+                stars.forEach(star => { paintMeme(star, Number(star.dataset.v)); star.setAttribute('aria-label', `${star.dataset.v} sao`); });
                 showCatReaction(rating, s, 'Tổng thể');
             });
         });
