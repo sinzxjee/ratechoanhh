@@ -90,6 +90,32 @@ const server=http.createServer((req,res)=>{
    await p.context().close();
   }
  });
+ await test('Step guide follows completed required fields and can be switched off independently',async()=>{
+  const p=await page({mobile:true,closed:true});
+  check(await p.locator('.step-guide:visible').count()===0,'Guide appeared too early');
+  await p.fill('#service','Đưa đi làm');await p.locator('#service').blur();
+  check((await p.locator('.step-guide-note').innerText()).includes('chấm sao'),'Service did not guide to rating');
+  check(await p.locator('.step-guide-shaft').count()===1&&await p.locator('.step-guide-head').count()===1,'Curved drawn arrow missing');
+  await p.locator('.step-guide').click();check(await p.locator('#rating-menu').getAttribute('open')!==null,'Guide did not open rating');
+  await p.locator('#stars [data-v="4"]').click();
+  check((await p.locator('.step-guide-note').innerText()).includes('nhận xét'),'Rating did not guide to comment');
+  await p.fill('#comment','Tốt lắm');await p.locator('#comment').blur();
+  check((await p.locator('.step-guide-note').innerText()).includes('gửi'),'Comment did not guide to submit');
+  await p.context().close();
+ });
+ await test('Changing pets flips the card and reduced motion skips the flip',async()=>{
+  const p=await page({mobile:true,closed:true});
+  await p.locator('[data-pet="dog"]').click();
+  check(await p.locator('.container.pet-card-flip').count()===1,'Flip class missing');
+  await p.waitForFunction(()=>document.body.dataset.pet==='dog');
+  check(await p.locator('.pet-theme-button[data-pet="dog"]').getAttribute('aria-pressed')==='true','Pet selection failed');
+  await p.context().close();
+  const reduced=await page({mobile:true,closed:true,reducedMotion:true});
+  await reduced.locator('[data-pet="goat"]').click();
+  check(await reduced.locator('.container.pet-card-flip').count()===0,'Reduced motion still flipped');
+  check(await reduced.evaluate(()=>document.body.dataset.pet)==='goat','Reduced motion failed to change pet');
+  await reduced.context().close();
+ });
  await test('Required fields prevent submission',async()=>{const p=await page();await p.click('#send-btn');check(p.calls.length===0,'Unexpected submission');check(!(await p.locator('#email-error').evaluate(e=>e.classList.contains('show'))),'Blank optional email was flagged');await p.context().close();});
  await test('Rating selects correct stars',async()=>{const p=await page();await p.click('#stars [data-v="3"]');check(await p.locator('#stars .active').count()===3,'Wrong stars');await p.context().close();});
  await test('Successful submission resets form without rank tracking',async()=>{const p=await page();await fill(p);await p.click('#send-btn');await p.waitForFunction(()=>document.querySelector('#thanks-popup').style.display==='flex');check(p.calls.length===1,'Wrong request count');check(await p.inputValue('#user-email')==='','Form not reset');check(await p.evaluate(()=>localStorage.getItem('ratechotui_history'))===null,'Rank tracking remains');await p.context().close();});
