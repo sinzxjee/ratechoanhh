@@ -11,7 +11,7 @@ const server=http.createServer((req,res)=>{
  if(name==='/')name='/index.html';
  const file=path.join(root,name);
  if(!file.startsWith(root)||!fs.existsSync(file)){res.writeHead(404);return res.end('Not found');}
- const mime={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.gif':'image/gif','.svg':'image/svg+xml','.jpg':'image/jpeg'};
+ const mime={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.gif':'image/gif','.svg':'image/svg+xml','.jpg':'image/jpeg','.webp':'image/webp'};
  res.setHeader('Content-Type',mime[path.extname(file)]||'text/plain');res.end(fs.readFileSync(file));
 });
 (async()=>{
@@ -21,12 +21,12 @@ const server=http.createServer((req,res)=>{
  async function test(name,fn){if(process.env.NO_LOCAL_SW&&name.startsWith('Service worker ')){results.push({name,status:'SKIP',detail:'Local network is blocked in this test environment'});return;}try{await fn();results.push({name,status:'PASS'});}catch(e){results.push({name,status:'FAIL',detail:e.message});}}
  function check(condition,msg){if(!condition)throw Error(msg);}
  async function page(options={}){
-  const context=await browser.newContext({viewport:options.mobile?{width:375,height:812}:{width:1280,height:900},isMobile:!!options.mobile,hasTouch:!!options.mobile,serviceWorkers:options.sw?'allow':'block'});
+  const context=await browser.newContext({viewport:options.mobile?{width:375,height:812}:{width:1280,height:900},isMobile:!!options.mobile,hasTouch:!!options.mobile,reducedMotion:options.reducedMotion?'reduce':'no-preference',serviceWorkers:options.sw?'allow':'block'});
   const p=await context.newPage();p.errors=[];p.calls=[];
   await p.exposeFunction('__recordCall',data=>{p.calls.push({method:data.action==='list'?'GET':'POST',body:JSON.stringify(data),action:data.action});});
   p.on('pageerror',e=>p.errors.push(e.message));p.on('dialog',d=>d.dismiss());
   await p.route('**/*',async r=>{
-   if(r.request().url().startsWith(base)){let name=decodeURIComponent(new URL(r.request().url()).pathname);if(name==='/')name='/index.html';const file=path.join(root,name);if(!file.startsWith(root)||!fs.existsSync(file))return r.fulfill({status:404,body:'Not found'});const mime={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.gif':'image/gif','.svg':'image/svg+xml','.jpg':'image/jpeg'};return r.fulfill({contentType:mime[path.extname(file)]||'text/plain',body:fs.readFileSync(file)});}
+   if(r.request().url().startsWith(base)){let name=decodeURIComponent(new URL(r.request().url()).pathname);if(name==='/')name='/index.html';const file=path.join(root,name);if(!file.startsWith(root)||!fs.existsSync(file))return r.fulfill({status:404,body:'Not found'});const mime={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.gif':'image/gif','.svg':'image/svg+xml','.jpg':'image/jpeg','.webp':'image/webp'};return r.fulfill({contentType:mime[path.extname(file)]||'text/plain',body:fs.readFileSync(file)});}
    if(r.request().url().includes('script.google.com')){
     const url=new URL(r.request().url());
     const target='https://n-mock-script.googleusercontent.com/bridge'+url.search;
@@ -63,6 +63,19 @@ const server=http.createServer((req,res)=>{
  async function fill(p,whitespace=false){if(await p.locator('#rating-menu').getAttribute('open')===null)await p.locator('#rating-menu > summary').click();await setEmail(p,'test@example.com');await p.fill('#service',whitespace?'   ':'Test service');await p.fill('#comment',whitespace?'   ':'Test comment');await p.click('#stars [data-v="4"]');}
  await test('Initial page loads without runtime errors',async()=>{const p=await page();check(p.errors.length===0,p.errors.join(';'));check(await p.locator('#game-panel').count()===0,'Rank panel remains');await p.context().close();});
  await test('Mobile page fits viewport',async()=>{const p=await page({mobile:true});check(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Horizontal overflow');await p.context().close();});
+ await test('Mobile sections reveal on scroll and respect reduced motion',async()=>{
+  const p=await page({mobile:true,closed:true});
+  check(await p.locator('#service').isVisible(),'First input hidden');
+  const target=p.locator('#pet-theme-picker');
+  check(await target.evaluate(el=>el.classList.contains('scroll-reveal')&&!el.classList.contains('is-visible')),'Lower section did not start pending');
+  await target.evaluate(el=>el.scrollIntoView({block:'center'}));
+  await p.waitForFunction(()=>document.querySelector('#pet-theme-picker').classList.contains('is-visible'));
+  await p.waitForFunction(()=>getComputedStyle(document.querySelector('#pet-theme-picker')).opacity==='1');
+  await p.context().close();
+  const reduced=await page({mobile:true,closed:true,reducedMotion:true});
+  check(await reduced.locator('.scroll-reveal').count()===0,'Reduced motion still hides sections');
+  await reduced.context().close();
+ });
  await test('Required fields prevent submission',async()=>{const p=await page();await p.click('#send-btn');check(p.calls.length===0,'Unexpected submission');check(!(await p.locator('#email-error').evaluate(e=>e.classList.contains('show'))),'Blank optional email was flagged');await p.context().close();});
  await test('Rating selects correct stars',async()=>{const p=await page();await p.click('#stars [data-v="3"]');check(await p.locator('#stars .active').count()===3,'Wrong stars');await p.context().close();});
  await test('Successful submission resets form without rank tracking',async()=>{const p=await page();await fill(p);await p.click('#send-btn');await p.waitForFunction(()=>document.querySelector('#thanks-popup').style.display==='flex');check(p.calls.length===1,'Wrong request count');check(await p.inputValue('#user-email')==='','Form not reset');check(await p.evaluate(()=>localStorage.getItem('ratechotui_history'))===null,'Rank tracking remains');await p.context().close();});
@@ -101,6 +114,16 @@ const server=http.createServer((req,res)=>{
  await test('Header meme rotates every three seconds and all stars show memes',async()=>{const p=await page({mobile:true,closed:true});const image=p.locator('#cat-mascot');check(await p.locator('#game-panel, #badge-title, #toggle-history-btn').count()===0,'Rank UI remains');const first=await image.getAttribute('data-pet-score');await p.waitForFunction(previous=>document.querySelector('#cat-mascot').dataset.petScore!==previous,first,{timeout:5000});await p.locator('#rating-menu > summary').click();check(await p.locator('#stars span').evaluateAll(es=>es.every(e=>!!getComputedStyle(e).backgroundImage&&getComputedStyle(e).backgroundImage!=='none')),'Stars lack memes');await p.click('#stars [data-v="1"]');check(await image.getAttribute('data-pet-score')==='1','Rating did not set reaction');await p.context().close();});
  await test('Pet themes show memes, preserve form data and persist on reload',async()=>{const p=await page({mobile:true});await p.fill('#service','Đưa đi làm');await p.fill('#comment','Nội dung đang viết');check(await p.locator('#pet-theme-picker').evaluate(e=>e.getBoundingClientRect().top>document.querySelector('#send-btn').getBoundingClientRect().bottom),'Picker is not below submit');for(const pet of ['dog','goat','otter']){await p.locator(`[data-pet="${pet}"].pet-theme-button`).click();check(await p.locator('body').getAttribute('data-pet')===pet,'Wrong theme');check(await p.inputValue('#service')==='Đưa đi làm'&&await p.inputValue('#comment')==='Nội dung đang viết','Theme erased form');const images=p.locator('.criterion-cat-choice img');check(await images.evaluateAll(es=>es.every(e=>e.complete&&e.naturalWidth>0)),'Meme missing');await p.click('#stars [data-v="4"]');check(await p.locator('.rating-meme').evaluate(e=>e.complete&&e.naturalWidth>0),'Wrong theme reaction');await p.locator('#pet-theme-picker legend').click();await p.screenshot({path:path.join(output,`theme-${pet}-mobile.png`),fullPage:true});}await p.reload();check(await p.locator('body').getAttribute('data-pet')==='otter','Saved theme lost');check(await p.locator('.pet-theme-button[aria-pressed="true"]').count()===1,'Multiple selections');await p.locator('.pet-theme-button[data-pet="cat"]').press('Enter');check(await p.locator('body').getAttribute('data-pet')==='cat','Keyboard selection failed');check(await p.locator('.popup-mascot img').getAttribute('src')==='sleeping-cat.gif','Cat GIF not restored');await p.context().close();});
  await test('Meme pools offer at least twenty cats and ten dogs without repeats on consecutive clicks',async()=>{const source=fs.readFileSync(path.join(root,'script.js'),'utf8');check(source.includes('length: 20')&&source.includes('length: 5'),'Meme pools are too small');const p=await page();const star=p.locator('#stars [data-v="5"]');await star.click();const first=await p.locator('#cat-mascot').getAttribute('data-meme-key');await star.click();check(await p.locator('#cat-mascot').getAttribute('data-meme-key')!==first,'Meme repeated immediately');await p.context().close();});
+ await test('Every added meme is an independent image, not a CSS sprite',async()=>{
+  const source=fs.readFileSync(path.join(root,'script.js'),'utf8');
+  check(!source.includes('meme-cat-sheet.png')&&!source.includes('meme-dog-sheet.png'),'Sprite sheet is still rendered');
+  const files=[...Array.from({length:20},(_,i)=>`meme-cat-extra-${String(i+1).padStart(2,'0')}.webp`),...Array.from({length:5},(_,i)=>`meme-dog-extra-${String(i+1).padStart(2,'0')}.webp`)];
+  check(files.every(name=>fs.existsSync(path.join(root,name))),'A separate meme file is missing');
+  const p=await page({mobile:true,closed:true});
+  for(const name of files){check(await p.evaluate(src=>new Promise(resolve=>{const img=new Image();img.onload=()=>resolve(img.naturalWidth>=300&&img.naturalHeight>=300);img.onerror=()=>resolve(false);img.src=src;}),name),`Image did not load: ${name}`);}
+  check(await p.locator('#cat-mascot').evaluate(el=>!el.src.startsWith('data:')),'Header still uses a sprite placeholder');
+  await p.context().close();
+ });
  await test('Invalid stored pet falls back to cat and admin remains monochrome',async()=>{const p=await page({petTheme:'__proto__'});check(await p.locator('body').getAttribute('data-pet')==='cat'&&p.errors.length===0,'Invalid theme broke page');await p.context().close();const admin=await page({admin:true,petTheme:'goat'});check(await admin.locator('body').evaluate(e=>e.classList.contains('admin-mode')&&getComputedStyle(e).backgroundColor==='rgb(246, 246, 246)'),'Pet theme leaked into admin');await admin.context().close();});
  fs.writeFileSync(path.join(output,'browser-results.json'),JSON.stringify(results,null,2));
  console.log(JSON.stringify(results,null,2));
