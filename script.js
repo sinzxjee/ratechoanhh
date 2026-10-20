@@ -11,12 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
         otter: { name: 'Rái cá', greeting: 'Rái cá chào ynhi!', trail: '🫧' }
     };
     let activePet = 'cat';
-    const transparentPixel = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
     const memePools = {
         cat: [1, 2, 3, 4, 5].map(n => ({ src: `meme-rating-${n}.${n === 5 ? 'png' : 'jpg'}` }))
-            .concat(Array.from({ length: 20 }, (_, index) => ({ sheet: 'meme-cat-sheet.png', index, columns: 5, rows: 4 }))),
+            .concat(Array.from({ length: 20 }, (_, index) => ({ src: `meme-cat-extra-${String(index + 1).padStart(2, '0')}.webp` }))),
         dog: [1, 2, 3, 4, 5].map(n => ({ src: `meme-dog-${n}.${n === 2 || n === 5 ? 'png' : 'jpg'}` }))
-            .concat(Array.from({ length: 5 }, (_, index) => ({ sheet: 'meme-dog-sheet.png', index, columns: 5, rows: 1, size: '527% 100%', x: [0, 22.8, 46.5, 70, 93.6][index] }))),
+            .concat(Array.from({ length: 5 }, (_, index) => ({ src: `meme-dog-extra-${String(index + 1).padStart(2, '0')}.webp` }))),
         goat: [1, 2, 3, 4, 5].map(n => ({ src: `meme-goat-${n}.jpg` })),
         otter: [1, 2, 3, 4, 5].map(n => ({ src: `meme-otter-${n}.jpg` }))
     };
@@ -29,11 +28,14 @@ document.addEventListener('DOMContentLoaded', () => {
         element.dataset.memeKey = String(index);
         element.dataset.petScore = String(score);
         element.setAttribute('aria-label', `${petThemes[pet].name} · ${score}/5 sao`);
-        element.style.backgroundImage = meme.sheet ? `url("${meme.sheet}")` : '';
-        element.style.backgroundSize = meme.sheet ? (meme.size || `${meme.columns * 100}% ${meme.rows * 100}%`) : '';
-        element.style.backgroundPosition = meme.sheet ? `${meme.x ?? (meme.index % meme.columns) * 100 / (meme.columns - 1)}% ${Math.floor(meme.index / meme.columns) * 100 / Math.max(1, meme.rows - 1)}%` : '';
-        if (element.tagName === 'IMG') element.src = meme.sheet ? transparentPixel : meme.src;
-        else if (!meme.sheet) { element.style.backgroundImage = `url("${meme.src}")`; element.style.backgroundSize = 'cover'; element.style.backgroundPosition = 'center'; }
+        if (element.tagName === 'IMG') {
+            element.src = meme.src;
+            element.style.backgroundImage = '';
+        } else {
+            element.style.backgroundImage = `url("${meme.src}")`;
+            element.style.backgroundSize = 'cover';
+            element.style.backgroundPosition = 'center';
+        }
     }
     function copyMeme(from, to) {
         to.src = from.src;
@@ -74,6 +76,42 @@ document.addEventListener('DOMContentLoaded', () => {
     initPetThemes();
     initAdminPanel();
     initViewSwitcher();
+    initMobileScrollReveal();
+
+    function initMobileScrollReveal() {
+        if (!('IntersectionObserver' in window)) return;
+        const mobile = window.matchMedia('(max-width: 600px)');
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        if (!mobile.matches || reducedMotion.matches || document.body.classList.contains('admin-mode')) return;
+
+        const blocks = [...document.querySelectorAll(
+            '#feedback-view .form-container > .input-field:not([hidden]), ' +
+            '#rating-menu, #send-btn, #pet-theme-picker, .cat-signoff'
+        )];
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+            });
+        }, { rootMargin: '0px 0px -7% 0px', threshold: 0 });
+
+        blocks.forEach((block, index) => {
+            // Keep the first screen visible immediately, including while JS starts.
+            if (block.getBoundingClientRect().top < window.innerHeight - 32) return;
+            block.style.setProperty('--reveal-delay', `${Math.min(index % 3, 2) * 55}ms`);
+            block.classList.add('scroll-reveal');
+            observer.observe(block);
+        });
+
+        const revealAll = () => {
+            if (mobile.matches && !reducedMotion.matches) return;
+            observer.disconnect();
+            blocks.forEach(block => block.classList.add('is-visible'));
+        };
+        mobile.addEventListener('change', revealAll);
+        reducedMotion.addEventListener('change', revealAll);
+    }
 
     // ===================================================================
     // PWA: đăng ký service worker (cài app + dùng offline)

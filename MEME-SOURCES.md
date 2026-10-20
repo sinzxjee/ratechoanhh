@@ -14,4 +14,4 @@ Sleeping cat GIF in the success popup: https://bestanimations.com/Animals/Mammal
 
 ## Expanded meme pools
 
-`meme-cat-sheet.png` contains 20 generated cat reaction portraits in a 5×4 grid. `meme-dog-sheet.png` contains 5 generated dog reaction portraits in a 5×1 grid. Both were made with the built-in image generation tool for this website; each tile is displayed separately by CSS. The five earlier cat memes and five earlier dog memes bring the totals to 25 cats and 10 dogs. Goat and otter each retain their existing set of five photos.
+The 20 generated cat portraits are stored as separate `meme-cat-extra-01.webp` through `meme-cat-extra-20.webp` files. The five generated dog portraits are separate `meme-dog-extra-01.webp` through `meme-dog-extra-05.webp` files. These were extracted from the original generated contact sheets with the white gutters removed, then optimized as WebP. The browser loads each portrait as a complete image instead of positioning a sprite sheet. Together with the five earlier memes per animal, the pools contain 25 cats and 10 dogs. Goat and otter each retain their existing set of five photos.

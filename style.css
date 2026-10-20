@@ -919,3 +919,17 @@ body:not([data-pet="cat"]) [data-pet-score] { object-fit: cover; border-radius: 
 @media(max-width: 380px) {
     #feedback-view .stars span { width: 44px; height: 44px; flex-basis: 44px; font-size: 32px; }
 }
+
+/* Reveal form sections as they enter the phone viewport. JS only marks sections below the fold. */
+@media (max-width: 600px) and (prefers-reduced-motion: no-preference) {
+    #feedback-view .scroll-reveal {
+        opacity: 0;
+        transform: translateY(18px);
+        transition: opacity .52s ease var(--reveal-delay, 0ms),
+                    transform .52s cubic-bezier(.2, .7, .2, 1) var(--reveal-delay, 0ms);
+    }
+    #feedback-view .scroll-reveal.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
