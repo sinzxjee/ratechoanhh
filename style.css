@@ -1004,3 +1004,33 @@ body:not([data-pet="cat"]) [data-pet-score] { object-fit: cover; border-radius: 
 @media (prefers-reduced-motion: reduce) {
     #feedback-view .step-guide, .guide-writing .step-guide-note, .guide-writing .step-guide-shaft, .guide-writing .step-guide-head, #feedback-view .container.pet-card-flip { animation: none; }
 }
+
+/* The selected meme peeks over the comment field once when typing begins. */
+.comment-entry { position: relative; }
+.comment-peek {
+    position: absolute;
+    z-index: 2;
+    right: 16px;
+    top: -12px;
+    width: 64px;
+    height: 64px;
+    border: 3px solid var(--pet-border, #b78569);
+    border-radius: 48% 48% 36% 36%;
+    background: var(--pet-paper, #fff9ef);
+    box-shadow: 3px 4px 0 var(--pet-soft, #edd4c0);
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(32px) rotate(-12deg) scale(.65);
+}
+.comment-peek img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 22%; }
+@keyframes comment-meme-peek {
+    0% { opacity: 0; transform: translateY(32px) rotate(-12deg) scale(.65); }
+    22% { opacity: 1; transform: translateY(-34px) rotate(7deg) scale(1.08); }
+    50% { opacity: 1; transform: translateY(-30px) rotate(13deg) scale(1); }
+    76% { opacity: 1; transform: translateY(-28px) rotate(4deg) scale(1); }
+    100% { opacity: 0; transform: translateY(28px) rotate(-8deg) scale(.75); }
+}
+@media (prefers-reduced-motion: no-preference) {
+    .comment-peek.is-peeking { animation: comment-meme-peek 1.55s ease-in-out both; }
+}

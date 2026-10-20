@@ -266,6 +266,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const serviceInput = document.getElementById('service');
         const ratingMenu = document.getElementById('rating-menu');
         const commentInput = document.getElementById('comment');
+        const commentPeek = document.querySelector('.comment-peek');
+        const commentPeekMeme = document.getElementById('comment-peek-meme');
+        let peekShownThisFocus = false;
+        commentInput.addEventListener('focus', () => { peekShownThisFocus = false; });
+        commentInput.addEventListener('input', () => {
+            if (!commentInput.value.trim()) { peekShownThisFocus = false; return; }
+            if (peekShownThisFocus || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            peekShownThisFocus = true;
+            commentPeekMeme.src = mascot.currentSrc || mascot.src;
+            commentPeek.classList.remove('is-peeking');
+            void commentPeek.offsetWidth;
+            commentPeek.classList.add('is-peeking');
+        });
+        commentPeek.addEventListener('animationend', event => {
+            if (event.target === commentPeek) commentPeek.classList.remove('is-peeking');
+        });
+        document.addEventListener('pet-theme-change', () => commentPeek.classList.remove('is-peeking'));
         // Independent feature switch: set to false to revert step guidance only.
         const ENABLE_STEP_GUIDE = true;
         const guide = document.createElement('div');
