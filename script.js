@@ -11,28 +11,43 @@ document.addEventListener('DOMContentLoaded', () => {
         otter: { name: 'Rái cá', greeting: 'Rái cá chào ynhi!', trail: '🫧' }
     };
     let activePet = 'cat';
+    const catBase = [1, 2, 3, 4, 5].map(n => `meme-rating-${n}.${n === 5 ? 'png' : 'jpg'}`);
+    const dogBase = [1, 2, 3, 4, 5].map(n => `meme-dog-${n}.${n === 2 || n === 5 ? 'png' : 'jpg'}`);
+    const catExtra = Array.from({ length: 20 }, (_, index) => `meme-cat-extra-${String(index + 1).padStart(2, '0')}.webp`);
+    const dogExtra = Array.from({ length: 5 }, (_, index) => `meme-dog-extra-${String(index + 1).padStart(2, '0')}.webp`);
+    // Each image was inspected for expression. Never mix cheerful memes into a low score.
     const memePools = {
-        cat: [1, 2, 3, 4, 5].map(n => ({ src: `meme-rating-${n}.${n === 5 ? 'png' : 'jpg'}` }))
-            .concat(Array.from({ length: 20 }, (_, index) => ({ src: `meme-cat-extra-${String(index + 1).padStart(2, '0')}.webp` }))),
-        dog: [1, 2, 3, 4, 5].map(n => ({ src: `meme-dog-${n}.${n === 2 || n === 5 ? 'png' : 'jpg'}` }))
-            .concat(Array.from({ length: 5 }, (_, index) => ({ src: `meme-dog-extra-${String(index + 1).padStart(2, '0')}.webp` }))),
-        goat: [1, 2, 3, 4, 5].map(n => ({ src: `meme-goat-${n}.jpg` })),
-        otter: [1, 2, 3, 4, 5].map(n => ({ src: `meme-otter-${n}.jpg` }))
+        cat: {
+            1: [catBase[0], catExtra[0], catExtra[3], catExtra[12], catExtra[14]],
+            2: [catBase[1], catExtra[1], catExtra[2], catExtra[10], catExtra[18]],
+            3: [catBase[2], catExtra[4], catExtra[5], catExtra[11], catExtra[16], catExtra[17]],
+            4: [catBase[3], catExtra[6], catExtra[9], catExtra[13], catExtra[15], catExtra[19]],
+            5: [catBase[4], catExtra[7], catExtra[8], catExtra[9], catExtra[15], catExtra[19]]
+        },
+        dog: {
+            1: [dogBase[0], dogExtra[0]],
+            2: [dogBase[4], dogExtra[2]],
+            3: [dogExtra[1], dogBase[2]],
+            4: [dogBase[1], dogBase[2], dogBase[3], dogExtra[3]],
+            5: [dogBase[3], dogExtra[3], dogExtra[4]]
+        },
+        goat: Object.fromEntries([1, 2, 3, 4, 5].map(n => [n, [`meme-goat-${n}.jpg`]])),
+        otter: Object.fromEntries([1, 2, 3, 4, 5].map(n => [n, [`meme-otter-${n}.jpg`]]))
     };
     function paintMeme(element, score, pet = activePet) {
-        const pool = memePools[pet];
+        const safeScore = Number.isInteger(score) && score >= 1 && score <= 5 ? score : 3;
+        const pool = memePools[pet][safeScore];
         const previous = element.dataset.memeKey;
-        const choices = pool.map((_, index) => index).filter(index => String(index) !== previous);
-        const index = choices[Math.floor(Math.random() * choices.length)];
-        const meme = pool[index];
-        element.dataset.memeKey = String(index);
-        element.dataset.petScore = String(score);
-        element.setAttribute('aria-label', `${petThemes[pet].name} · ${score}/5 sao`);
+        const choices = pool.filter(src => src !== previous);
+        const meme = (choices.length ? choices : pool)[Math.floor(Math.random() * (choices.length || pool.length))];
+        element.dataset.memeKey = meme;
+        element.dataset.petScore = String(safeScore);
+        element.setAttribute('aria-label', `${petThemes[pet].name} · ${safeScore}/5 sao`);
         if (element.tagName === 'IMG') {
-            element.src = meme.src;
+            element.src = meme;
             element.style.backgroundImage = '';
         } else {
-            element.style.backgroundImage = `url("${meme.src}")`;
+            element.style.backgroundImage = `url("${meme}")`;
             element.style.backgroundSize = 'cover';
             element.style.backgroundPosition = 'center';
         }
@@ -390,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.hidden) return;
             memeRotationTimer = setInterval(() => {
                 if (feedbackView.classList.contains('hidden') || thanksPopup.style.display === 'flex') return;
-                setMascotMeme(mascotScore % 5 + 1);
+                setMascotMeme(rating || 3);
             }, 3000);
         }
         document.addEventListener('visibilitychange', startMemeRotation);
