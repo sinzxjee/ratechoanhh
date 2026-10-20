@@ -71,10 +71,24 @@ const server=http.createServer((req,res)=>{
   await target.evaluate(el=>el.scrollIntoView({block:'center'}));
   await p.waitForFunction(()=>document.querySelector('#pet-theme-picker').classList.contains('is-visible'));
   await p.waitForFunction(()=>getComputedStyle(document.querySelector('#pet-theme-picker')).opacity==='1');
+  check(await target.evaluate(el=>getComputedStyle(el).animationName==='mobile-pop-in'),'Pop animation missing');
   await p.context().close();
   const reduced=await page({mobile:true,closed:true,reducedMotion:true});
   check(await reduced.locator('.scroll-reveal').count()===0,'Reduced motion still hides sections');
+  check(await reduced.locator('.pet-pop-word').count()===0,'Reduced motion still shows floating words');
   await reduced.context().close();
+ });
+ await test('Each pet has its own floating word and the page stays silent',async()=>{
+  const source=fs.readFileSync(path.join(root,'script.js'),'utf8');
+  check(!source.includes('AudioContext')&&!fs.readFileSync(path.join(root,'index.html'),'utf8').includes('pet-sound-toggle'),'Audio feature remains');
+  for(const [pet,call]of [['cat','Meow!'],['dog','Gâu gâu!'],['goat','Be be!'],['otter','Chíp chíp!']]){
+   const p=await page({mobile:true,closed:true,petTheme:pet});
+   const target=p.locator('#pet-theme-picker');
+   await target.evaluate(el=>el.scrollIntoView({block:'center'}));
+   await target.locator('.pet-pop-word').waitFor({state:'visible'});
+   check(await target.locator('.pet-pop-word').innerText()===call,`${pet} showed the wrong word`);
+   await p.context().close();
+  }
  });
  await test('Required fields prevent submission',async()=>{const p=await page();await p.click('#send-btn');check(p.calls.length===0,'Unexpected submission');check(!(await p.locator('#email-error').evaluate(e=>e.classList.contains('show'))),'Blank optional email was flagged');await p.context().close();});
  await test('Rating selects correct stars',async()=>{const p=await page();await p.click('#stars [data-v="3"]');check(await p.locator('#stars .active').count()===3,'Wrong stars');await p.context().close();});
