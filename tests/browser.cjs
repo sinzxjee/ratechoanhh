@@ -111,10 +111,12 @@ const server=http.createServer((req,res)=>{
   check(await p.locator('.pet-coin-toss').count()===1,'Coin did not appear');
   check(await p.evaluate(src=>document.querySelector('.pet-coin-front img').src.endsWith(src),old),'Coin front is not old pet');
   check((await p.locator('.pet-coin-back img').getAttribute('src')).startsWith('meme-dog-'),'Coin back is not selected pet');
-  check(await p.evaluate(()=>getComputedStyle(document.querySelector('.pet-coin')).animationName==='pet-coin-flight'),'Coin flight missing');
+  check(await p.evaluate(()=>getComputedStyle(document.querySelector('.pet-coin-toss')).animationName==='pet-coin-flight'),'Coin flight missing');
   check(await p.evaluate(()=>document.body.dataset.pet)==='cat','Theme changed before coin landed');
   await p.waitForFunction(()=>document.body.dataset.pet==='dog');
-  check(await p.locator('.pet-coin-toss').count()===0,'Coin remained after landing');
+  check(await p.locator('.pet-coin-toss.is-revealing').count()===1,'Theme did not switch under the cover');
+  check(await p.locator('.pet-coin-toss').evaluate(e=>{const r=e.getBoundingClientRect();return r.left<0&&r.top<0&&r.right>innerWidth&&r.bottom>innerHeight;}),'Coin did not cover viewport at theme change');
+  await p.locator('.pet-coin-toss').waitFor({state:'detached'});
   check(await p.locator('.pet-theme-button[data-pet="dog"]').getAttribute('aria-pressed')==='true','Pet selection failed');
   await p.context().close();
   const reduced=await page({mobile:true,closed:true,reducedMotion:true});
@@ -129,7 +131,7 @@ const server=http.createServer((req,res)=>{
   await p.locator('.pet-theme-button[data-pet="otter"]').click();
   check((await p.locator('.pet-coin-back img').getAttribute('src')).startsWith('meme-otter-'),'Second choice did not update coin');
   await p.waitForFunction(()=>document.body.dataset.pet==='otter');
-  check(await p.locator('.pet-coin-toss').count()===0,'Coin remained after latest choice');
+  await p.locator('.pet-coin-toss').waitFor({state:'detached'});
   await p.context().close();
  });
  await test('Comment typing shows the selected meme peeking without extra controls',async()=>{
