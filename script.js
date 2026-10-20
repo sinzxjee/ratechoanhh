@@ -46,6 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
         to.style.backgroundPosition = from.style.backgroundPosition;
     }
     function initPetThemes() {
+        const card = document.querySelector('#feedback-view .container');
+        let flipTimer;
         function applyPet(key, save) {
             activePet = Object.prototype.hasOwnProperty.call(petThemes, key) ? key : 'cat';
             document.body.dataset.pet = activePet;
@@ -66,7 +68,17 @@ document.addEventListener('DOMContentLoaded', () => {
         let saved = 'cat';
         try { saved = localStorage.getItem('ratechotui_pet_theme') || 'cat'; } catch (err) { /* Private browsing may block storage. */ }
         applyPet(saved, false);
-        document.querySelectorAll('.pet-theme-button').forEach(button => button.addEventListener('click', () => applyPet(button.dataset.pet, true)));
+        document.querySelectorAll('.pet-theme-button').forEach(button => button.addEventListener('click', () => {
+            if (button.dataset.pet === activePet) return;
+            window.clearTimeout(flipTimer);
+            const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reduced) { applyPet(button.dataset.pet, true); return; }
+            card.classList.remove('pet-card-flip');
+            void card.offsetWidth;
+            card.classList.add('pet-card-flip');
+            applyPet(button.dataset.pet, true);
+            flipTimer = window.setTimeout(() => card.classList.remove('pet-card-flip'), 620);
+        }));
     }
 
     initCursorFollower();
@@ -251,6 +263,47 @@ document.addEventListener('DOMContentLoaded', () => {
         const sendBtn = document.getElementById('send-btn');
         const stars = document.querySelectorAll('#stars span');
         const formStatus = document.getElementById('form-status');
+        const serviceInput = document.getElementById('service');
+        const ratingMenu = document.getElementById('rating-menu');
+        const commentInput = document.getElementById('comment');
+        // Independent feature switch: set to false to revert step guidance only.
+        const ENABLE_STEP_GUIDE = true;
+        const guide = document.createElement('button');
+        guide.type = 'button';
+        guide.className = 'step-guide';
+        guide.hidden = true;
+        guide.innerHTML = '<span class="step-guide-note"></span><svg class="step-guide-arrow" viewBox="0 0 42 58" aria-hidden="true"><path class="step-guide-shaft" d="M8 3 C 40 12, 3 32, 25 48"/><path class="step-guide-head" d="M13 43 L25 49 L31 37"/></svg>';
+        const guideNote = guide.querySelector('.step-guide-note');
+        let guideTarget = null;
+        function updateGuide() {
+            if (!ENABLE_STEP_GUIDE) return;
+            if (sendBtn.disabled || thanksPopup.style.display === 'flex') { guide.hidden = true; return; }
+            let anchor;
+            if (commentInput.value.trim() && rating > 0 && serviceInput.value.trim()) {
+                anchor = commentInput.closest('.input-field'); guideTarget = sendBtn; guideNote.textContent = 'Xong rồi! Bấm gửi nhé';
+            } else if (rating > 0 && serviceInput.value.trim()) {
+                anchor = ratingMenu; guideTarget = commentInput; guideNote.textContent = 'Tiếp theo: viết nhận xét';
+            } else if (serviceInput.value.trim()) {
+                anchor = serviceInput.closest('.input-field'); guideTarget = ratingMenu; guideNote.textContent = 'Tiếp theo: chấm sao';
+            } else { guide.hidden = true; return; }
+            anchor.insertAdjacentElement('afterend', guide);
+            guide.hidden = false;
+            guide.classList.remove('guide-writing');
+            void guide.offsetWidth;
+            guide.classList.add('guide-writing');
+        }
+        guide.addEventListener('click', () => {
+            if (guideTarget === ratingMenu) ratingMenu.open = true;
+            guideTarget.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center' });
+            if (guideTarget === commentInput || guideTarget === sendBtn) guideTarget.focus({ preventScroll: true });
+            else ratingMenu.querySelector('summary').focus({ preventScroll: true });
+        });
+        if (ENABLE_STEP_GUIDE) {
+            serviceInput.addEventListener('blur', updateGuide);
+            serviceInput.addEventListener('input', () => { if (!serviceInput.value.trim()) updateGuide(); });
+            commentInput.addEventListener('blur', updateGuide);
+            commentInput.addEventListener('input', () => { if (!commentInput.value.trim()) updateGuide(); });
+        }
         const criteriaLabels = { punctuality: 'Đúng giờ', care: 'Chu đáo', attitude: 'Thái độ' };
         const criteriaInputs = [];
         const resetCriteriaMenus = [];
@@ -397,10 +450,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 stars.forEach(star => star.classList.toggle('active', star.dataset.v <= rating));
                 stars.forEach(star => { paintMeme(star, Number(star.dataset.v)); star.setAttribute('aria-label', `${star.dataset.v} sao`); });
                 showCatReaction(rating, s, 'Tổng thể');
+                updateGuide();
             });
         });
 
-        const commentInput = document.getElementById('comment');
         if (commentInput) {
             commentInput.addEventListener('input', () => {
                 if (rating > 0) mascot.style.transform = `scale(${1.1 + rating * 0.03}) rotate(5deg)`;
@@ -517,6 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 submission = null;
                 dismissCatReaction();
                 formStatus.textContent = 'Đã lưu đánh giá. ' + (result.warning || '');
+                guide.hidden = true;
 
                 emailInput.value = '';
                 emailInput.classList.remove('input-error');

@@ -962,3 +962,46 @@ body:not([data-pet="cat"]) [data-pet-score] { object-fit: cover; border-radius: 
         animation: pet-word-float 1.15s ease-out both;
     }
 }
+
+/* A small guide appears after the latest completed required field. */
+#feedback-view .step-guide[hidden] { display: none; }
+#feedback-view .step-guide {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    width: fit-content;
+    max-width: 100%;
+    margin: 10px auto 18px;
+    padding: 2px 8px;
+    border: 0;
+    background: transparent;
+    color: var(--pet-ink, #76564b);
+    box-shadow: none;
+    font: 700 24px 'Caveat', 'Segoe Print', cursive;
+    cursor: pointer;
+    animation: guide-appear .32s ease-out both;
+}
+.step-guide-note { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; }
+.guide-writing .step-guide-note { animation: guide-handwrite .9s steps(26, end) .12s both; }
+.step-guide-arrow { width: 38px; height: 52px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.step-guide-shaft { stroke-dasharray: 80; stroke-dashoffset: 0; }
+.step-guide-head { stroke-dasharray: 35; stroke-dashoffset: 0; }
+.guide-writing .step-guide-shaft { animation: guide-draw-shaft .62s ease-in-out .52s both; }
+.guide-writing .step-guide-head { animation: guide-draw-head .22s ease-out 1.12s both; }
+.step-guide:focus-visible { outline: 3px solid #3975ba; outline-offset: 3px; }
+@keyframes guide-appear { from { opacity: 0; transform: translateY(-9px) scale(.9); } to { opacity: 1; transform: none; } }
+@keyframes guide-handwrite { from { width: 0; } to { width: 100%; } }
+@keyframes guide-draw-shaft { from { stroke-dashoffset: 80; } to { stroke-dashoffset: 0; } }
+@keyframes guide-draw-head { from { stroke-dashoffset: 35; } to { stroke-dashoffset: 0; } }
+
+@keyframes pet-card-turn {
+    0% { transform: perspective(1000px) rotateY(0); }
+    42% { transform: perspective(1000px) rotateY(-82deg) scale(.94); }
+    58% { transform: perspective(1000px) rotateY(-82deg) scale(.94); }
+    100% { transform: perspective(1000px) rotateY(0); }
+}
+#feedback-view .container.pet-card-flip { transform-origin: center center; animation: pet-card-turn .6s ease-in-out both; }
+@media (prefers-reduced-motion: reduce) {
+    #feedback-view .step-guide, .guide-writing .step-guide-note, .guide-writing .step-guide-shaft, .guide-writing .step-guide-head, #feedback-view .container.pet-card-flip { animation: none; }
+}
